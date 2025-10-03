@@ -1,4 +1,4 @@
-export default function SponsorUs(props: any)
+export default function SponsorUs()
     {
         return <>¿Quieres patrocinarnos dentro de la OSHWDem? 
         
