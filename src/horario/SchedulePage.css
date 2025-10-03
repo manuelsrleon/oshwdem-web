@@ -1,0 +1,158 @@
+div:has(.schedule) {
+    background: linear-gradient(120deg, var(--color-background) 0%, var(--color-background) 40%, var(--accent-9) 60.01%);
+}
+
+.schedule {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-auto-rows: min-content;
+    /* each row = 30 min */
+    gap: 4px;
+    font-family: sans-serif;
+}
+.schedule-header {
+    display: flex;
+}
+
+.schedule-title {
+    display: flex;
+    flex-direction: row;
+    margin: auto;
+    font-size: 72px;
+    text-align: center;
+}
+
+.header {
+    font-weight: bold;
+    text-align: center;
+    background: #222;
+    border-radius: 10px;
+    color: #fff;
+    padding: 4px;
+    font-family: 'BakBak One', 'Helvetica', 'sans-serif';
+}
+
+.time-label {
+    font-size: 1.2rem;
+    color: black;
+    font-weight: bold;
+    text-align: center;
+
+    padding-right: 6px;
+    background-color: white;
+    border-radius: 10px;
+}
+
+.activity {
+    padding: 6px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    border: 0px solid white;
+}
+
+/* Dark palette */
+.activity.taller {
+    background: #0d47a1;
+    position: relative;
+    z-index: 11;
+}
+
+.activity.charla {
+    background: #00aeff;
+    position: relative;
+}
+
+.activity.competicion {
+    background: #7300ff;
+}
+
+.activity.descanso {
+    background: white;
+    color: #000;
+}
+
+.activity.apertura,
+.activity.cierre {
+    color:black;
+    background: white;
+}
+
+.activity.exposicion {
+    align-items: flex-end;
+    background-color: rgb(140, 0, 153);
+    z-index: 10;
+}
+
+.schedule-oshwdem-logo {
+    margin: 2rem;
+}
+
+.taller-marker{
+    content: 'Taller';
+    color: black;
+    background-color: white;
+    border-radius: 10px;
+    padding: 1rem 0.2rem;
+    margin: 0.5rem;
+    font-family: 'BakBak One', 'Helvetica', 'sans-serif';
+}
+
+.charla-marker {
+    content: 'Charla';
+    color: white;
+    background-color: black;
+    border-radius: 10px;
+    padding: 1rem 0.2rem;
+    margin: 0.5rem;
+    font-family: 'BakBak One', 'Helvetica', 'sans-serif';
+}
+.stands-container{
+    display:flex;
+    margin:2rem;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap:1rem;
+}
+.stand {
+    padding:2rem;
+    background-color: rgb(140, 0, 153);
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+@media screen and (max-width: 640px) {
+    .schedule-header {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    :has(.charla-marker), :has(.taller-marker) {
+        flex-direction: column;
+    }
+    .charla-marker, .taller-marker {
+        padding: 0 1rem;
+
+    }
+    .stands-container{
+        flex-direction: column;
+        margin:0;
+        
+    }
+    .stand {
+        width: 100vw;
+        box-sizing: border-box;
+    }
+}
+.stand-time {
+    padding:0;
+    margin:0;;
+}
+.stand-exhibitors {
+    padding:0;
+    margin:0;;
+
+}
