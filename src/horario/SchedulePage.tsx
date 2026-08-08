@@ -82,18 +82,6 @@ export default function Schedule() {
         <div key={loc} className="header">{loc}</div>
       ))}
 
-      {/* Time labels */}
-      {/* {Array.from({ length: (19 - 10) * 2 + 1 }).map((_, i) => {
-        const hour = 10 + Math.floor(i / 2);
-        const min = i % 2 === 0 ? "00" : "30";
-        const label = `${hour.toString().padStart(2, "0")}:${min}`;
-        return (
-          <div key={i} className="time-label" style={{ gridRow: i + 2 }}>
-            {label}
-          </div>
-        );
-      })} */}
-
       {/* Activities */}
       {activities.map(act => {
         const startRow = timeToRow(act.start);
