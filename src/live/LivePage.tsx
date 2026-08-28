@@ -194,18 +194,14 @@ export default function SchedulePage() {
           {livestreamingURL && livestreamingAvailable?<LivestreamingBanner></LivestreamingBanner> :<ComingSoon></ComingSoon>}
         </div>        
     </div>
-    <div className="content-marquee">
-      Tecnologías Libres - Robótica - Impresión 3D - Radioafición - Meshtastic - Right to Repair - Repair Café
-    </div>
-    <section>
-      <h2>Horario del evento</h2>
-      <Schedule></Schedule> 
-      Según se vayan confirmando charlas y actividades, las verás aquí.
-    </section>
-    <section>
-      <h2>Stands de la exposición maker</h2>
-      <Stands></Stands>
-    </section>
+    <ContentMarquee></ContentMarquee>
+    <Inscriptions></Inscriptions>
+    <Schedule></Schedule> 
+    
+    {/* TODO <TalksAndWorkshops></TalksAndWorkshops> */}
+    <Stands></Stands>
+    {/* TODO <Competitions></Competitions> */}
+    {/* TODO <Sponsors></Sponsors> */}
     </div>
     
   )
@@ -228,16 +224,39 @@ const MYSTERY_STANDS = 5;
 
 export function Stands() {
   return (
-    <div className="stands-container">
-      {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
-        <div className="stand mystery" key={i}>
-          <span className="mystery-label">Stand sin desvelar</span>
-          <div className="mystery-pattern" aria-hidden="true" />
-        </div>
-      ))}
-    </div>
+    <section>
+      <h2>Stands de la exposición maker</h2>
+      <div className="stands-container">
+        {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
+          <div className="stand mystery" key={i}>
+            <span className="mystery-label">Stand sin desvelar</span>
+            <div className="mystery-pattern" aria-hidden="true" />
+          </div>
+        ))}z
+      </div>
+    </section>
   );
 }
+export function TalksAndWorkshops() {
+  return <section className="tw-container">
+    <h2>¡Charlas! ¡Talleres!</h2>
+    <div className="activity-tw talk">
+      <img src="" alt="" />
+      <h3>LANZANDO PRODUCTOS OPEN SOURCE</h3>
+      <h4>JULIÁN CARO LINARES</h4>
+      <p>¿Consideras que un proyecto open source no puede ser viable? Déjame hacerte cambiar de opinión. En esta charla repasaremos lo que hace que un proyecto open source sea comercialmente viable, sin renunciar a nuestros principios.</p>
+      <p>Pecera - 10:00 - 12:00</p>
+      <p max-participants>15/30 asientos</p>
+    </div>
+    <div className="activity-tw workshop">
+      <h3>Test de taller</h3>
+    </div>
+    <div className="is-full">
+
+    </div>
+  </section>
+}
+
 export function Schedule() {
   const { activities: liveActivities, loading, error } = useActivities({
     statuses: VISIBLE_STATUSES,
@@ -260,7 +279,7 @@ export function Schedule() {
   if (error) {
     return (
       <div className="schedule-status schedule-error">
-        No se pudo cargar el horario: {error.message}
+        ¡No se pudo cargar el horario! ¡Comprueba tu conexión a internet! O quizás nuestra base de datos esté de vacaciones.
       </div>
     );
   }
@@ -268,81 +287,113 @@ export function Schedule() {
 
   return (
     <>
-    <div className="schedule-container">
-    <div className="schedule">
+    <section>
+      <h2>Horario del evento</h2>
+      <div className="schedule-container">
+        <div className="schedule">
 
-      {locations.map(loc => (
-        <div key={loc} className="header">{loc}</div>
-      ))}
+          {locations.map(loc => (
+            <div key={loc} className="schedule-header">{loc}</div>
+          ))}
 
-      {/* Before the real activities in the DOM so they paint underneath them. */}
-      {mysteryActivities.map(mystery => (
-        <div
-          key={mystery.key}
-          className="activity mystery"
-          style={{
-            gridColumn: mystery.column,
-            gridRow: `${mystery.startRow} / ${mystery.endRow}`,
-          }}
-        >
-          <span className="mystery-label">Sin actividad confirmada todavía</span>
-          <div className="mystery-pattern" aria-hidden="true" />
-        </div>
-      ))}
-
-      {/* Activities */}
-      {activities.map(act => {
-        const startRow = timeToRow(act.start, originMinutes);
-        // Never let an activity collapse to zero rows: one shorter than a row
-        // (or with end == start) still needs to occupy a cell.
-        const endRow = Math.max(timeToRow(act.end, originMinutes), startRow + 1);
-
-        // General has no column of its own, so it spans all three.
-        const col = columnOf(act.location) ?? "1 / span 3";
-
-        return (
-          <div
-            key={act.id}
-            className={`activity ${act.type.toLowerCase()} ${act.status ? `status-${act.status.toLowerCase()}` : ""}`}
-            style={{
-              gridColumn: col,
-              gridRow: `${startRow} / ${endRow}`
-            }}
-          >
-            {act.type == "Taller"?
-            <>
-              <div className="taller-marker">
-                Taller
-              </div>
-            </>:<></>}
-            {act.type == "Charla"?<>
-            <div className="charla-marker">
-                Charla
-              </div>
-            </>:<></>}
-            {act.status == "MOVED"?
-              <div className="status-marker moved-marker">Movida</div>
-            :<></>}
-            {act.status == "CANCELLED"?
-              <div className="status-marker cancelled-marker">Cancelada</div>
-            :<></>}
-            <div className={act.type+"-badge"}></div>
-            <div className="activity-text">
-                <strong>{act.title}</strong><br/>
-                {act.author?
-                <>
-                    <span className="activity-author">{act.author}</span><br/>
-                </>:<></>}
-                {act.type != "Otro"?
-                <><span className="activity-timeframe">{act.start+" - "+act.end}</span>
-                </>:<></>
-                }
+          {/* Before the real activities in the DOM so they paint underneath them. */}
+          {mysteryActivities.map(mystery => (
+            <div
+              key={mystery.key}
+              className="activity mystery"
+              style={{
+                gridColumn: mystery.column,
+                gridRow: `${mystery.startRow} / ${mystery.endRow}`,
+              }}
+            >
+              <span className="mystery-label">Sin actividad confirmada todavía</span>
+              <div className="mystery-pattern" aria-hidden="true" />
             </div>
-          </div>
-        );
-      })}
-    </div>
-    </div>
+          ))}
+
+          {/* Activities */}
+          {activities.map(act => {
+            const startRow = timeToRow(act.start, originMinutes);
+            // Never let an activity collapse to zero rows: one shorter than a row
+            // (or with end == start) still needs to occupy a cell.
+            const endRow = Math.max(timeToRow(act.end, originMinutes), startRow + 1);
+
+            // General has no column of its own, so it spans all three.
+            const col = columnOf(act.location) ?? "1 / span 3";
+
+            return (
+              <div
+                key={act.id}
+                className={`activity ${act.type.toLowerCase()} ${act.status ? `status-${act.status.toLowerCase()}` : ""}`}
+                style={{
+                  gridColumn: col,
+                  gridRow: `${startRow} / ${endRow}`
+                }}
+              >
+                {act.type == "Taller"?
+                <>
+                  <div className="taller-marker">
+                    Taller
+                  </div>
+                </>:<></>}
+                {act.type == "Charla"?<>
+                <div className="charla-marker">
+                    Charla
+                  </div>
+                </>:<></>}
+                {act.status == "MOVED"?
+                  <div className="status-marker moved-marker">Movida</div>
+                :<></>}
+                {act.status == "CANCELLED"?
+                  <div className="status-marker cancelled-marker">Cancelada</div>
+                :<></>}
+                <div className={act.type+"-badge"}></div>
+                <div className="activity-text">
+                    <strong>{act.title}</strong><br/>
+                    {act.author?
+                    <>
+                        <span className="activity-author">{act.author}</span><br/>
+                    </>:<></>}
+                    {act.type != "Otro"?
+                    <><span className="activity-timeframe">{act.start+" - "+act.end}</span>
+                    </>:<></>
+                    }
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      Según se vayan confirmando charlas y actividades, las verás aquí.
+    </section>
     </>
   );
 }
+  export function ContentMarquee(){
+    return <div className="content-marquee">
+      Tecnologías Libres - Robótica - Impresión 3D - Radioafición - Meshtastic - Right to Repair - Repair Café
+    </div>
+  }
+  export function Inscriptions(){
+    return <section> 
+    </section>
+  }
+  export function Competitions(){
+    return <section>
+    <h2>Competiciones</h2>
+    <div className="competition-container">
+      <div className="competition"><h3>01 Laberinto</h3></div>  
+      <div className="competition"><h3>02 Combate</h3></div>
+      <div className="competition"><h3>03 Siguelíneas (Iniciación)</h3></div>
+      <div className="competition"><h3>04 Velocistas</h3></div>
+      <div className="competition"><h3>05 Mini-Sumo</h3></div>
+      <div className="competition"><h3>06 Hebocon</h3></div>
+    </div>
+    </section>
+  }
+  export function Sponsors(){
+    return <section id="sponsors-display">
+      <h2>A tope de power gracias a: </h2>
+    </section>
+  }
+

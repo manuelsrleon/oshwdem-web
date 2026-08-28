@@ -12,7 +12,9 @@
 :root, .radix-themes, .dark, .light {
   --color-background: #131217;
   --color-foreground: white;
-  --accent-color: #FABE0B
+  --primary: #2E0561;
+  --accent-color: #FABE0B;
+  --border-radius: 15px;
 }
 
 button {
@@ -42,7 +44,22 @@ h1 {
   font-size: 3.2em;
   line-height: 1.1;
 }
+h2 {
+  font-size: 2.8rem;
+  text-transform: uppercase;
+}
+h3 {
+  font-size: 2rem;
+  text-transform: uppercase;
+}
+h4 {
+  font-size: 1.5rem;
+  text-transform: uppercase;
+}
 
+#sponsors-display{
+  display: grid;
+}
 @media (prefers-color-scheme: light) {
 }
 

@@ -50,7 +50,14 @@
     grid-auto-rows: max-content;
     /* each row = 30 min */
     gap: 4px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'BakBak One', sans-serif;
+}
+.schedule-header, .activity.otro {
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    color: var(--color-background);
+    text-align: center;
+    font-size: 1rem;
 }
 .live-header {
     display: flex;
@@ -60,6 +67,7 @@
     --grid-color: #fff3;
     background: repeating-linear-gradient(45deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(135deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), #2E0561;
     padding: 2em;
+    max-width: 100vw;
 }
 
 .content-marquee {
@@ -84,20 +92,10 @@ section {
     text-align: center;
 }
 
-.header {
-    font-weight: bold;
-    text-align: center;
-    background: #272727;
-    border-radius: 10px;
-    color: white;
-    padding: 4px;
-    font-family: 'BakBak One', 'Helvetica', 'sans-serif';
-}
-
 .activity {
     padding: 6px;
     border-radius: 10px;
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: #fff;
     display: flex;
     align-items: center;
@@ -120,12 +118,8 @@ section {
 }
 
 .activity.competicion {
-    background: #7300ff;
-}
-
-.activity.otro {
-    background: white;
-    color: #000;
+    background: var(--accent-color);
+    color: var(--color-background)
 }
 
 .activity.apertura,
@@ -224,6 +218,17 @@ section {
     border-radius: 10px;
     box-sizing: border-box;
 }
+.competition-container {
+    display:grid;
+    grid-auto-columns: auto;
+    gap: 15px;
+}
+.competition {
+    background-color: white;
+    color: black;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
 @media screen and (max-width: 640px) {
     .schedule-header {
         display: flex;
@@ -231,6 +236,21 @@ section {
         flex-direction: column;
         justify-content: center;
         font-size: 1rem !important;
+    }
+    .live-header{
+        max-width: 100vw;
+        flex-direction: column;
+        padding: 0.5rem;
+    }
+    section {
+        padding: 1rem;
+    }
+    .schedule-oshwdem-logo{
+        padding: 0.5rem;
+    }
+    #coming-soon{
+        font-size: 2rem;
+        padding:1.5rem;
     }
     :has(.charla-marker), :has(.taller-marker) {
         flex-direction: column;
@@ -270,7 +290,19 @@ section {
     background-color: #15121f;
     border: 2px dashed rgba(255, 255, 255, 0.25);
 }
+/* Talks and workshops*/
+.tw-container{
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.activity-tw{
+    background-color: cyan;
+    color: var(--color-background);
+    padding: 15px; 
+    border-radius: var(--border-radius);
 
+}
 /* This year's exhibitors aren't signed up yet either, so the exposition shows
    mystery stands rather than last year's line-up. */
 .stand.mystery {

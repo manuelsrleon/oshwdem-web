@@ -100,10 +100,6 @@ h3 {
   font-size: 1.2rem;
 }
 
-.about-oshwdem {}
-
-.about-organizers {}
-
 .competition-sponsors {
   display: flex;
   width: 100%;
@@ -182,8 +178,6 @@ h3 {
   height: 80vh;
   animation: bob-up-down 3s ease-in-out infinite;
 }
-
-.hero-image:hover {}
 
 @keyframes bob-up-down {
   0% {
