@@ -1,0 +1,126 @@
+
+:root {
+  font-family: 'BakBak One',system-ui, sans-serif, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root, .radix-themes, .dark, .light {
+  --color-background: #131217;
+  --color-foreground: white;
+  --accent-color: #FABE0B
+}
+
+button {
+  background-color: white;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+@media (prefers-color-scheme: light) {
+}
+
+/* ── Marquee ───────────────────────────────────────────────────────────────
+   Markup contract:
+
+     <div class="marquee">
+       <div class="marquee-track">
+         <div class="marquee-group">…items…</div>
+         <div class="marquee-group" aria-hidden="true">…the same items…</div>
+       </div>
+     </div>
+
+   The two groups must hold identical content. The track slides exactly -50%,
+   which lands copy two precisely where copy one started, so the loop has no
+   seam. The trailing padding is part of each group's width for the same
+   reason: put the spacing on the track instead and -50% lands half a gap out,
+   which shows up as a stutter once per cycle.
+*/
+.marquee {
+  --marquee-duration: 28s;
+  --marquee-gap: 2rem;
+  overflow: hidden;
+  /* A marquee must never be what widens the page. */
+  max-width: 100%;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll var(--marquee-duration) linear infinite;
+  will-change: transform;
+}
+
+.marquee-group {
+  display: flex;
+  align-items: center;
+  gap: var(--marquee-gap);
+  padding-inline-end: var(--marquee-gap);
+  /* The track is max-content; groups must keep their natural width. */
+  flex-shrink: 0;
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Travels right-to-left by default; this sends it the other way. */
+.marquee--reverse .marquee-track {
+  animation-direction: reverse;
+}
+
+/* Softens both ends so items drift in and out instead of being cut off. */
+.marquee--fade {
+  --marquee-fade: 4rem;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--marquee-fade), #000 calc(100% - var(--marquee-fade)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--marquee-fade), #000 calc(100% - var(--marquee-fade)), transparent);
+}
+
+/* WCAG 2.2.2: motion that starts on its own and runs past five seconds needs a
+   way to stop it. focus-within covers keyboard users, who cannot hover. */
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Still readable: a strip you can scroll rather than one that moves itself. */
+  .marquee {
+    overflow-x: auto;
+  }
+  .marquee-track {
+    animation: none;
+  }
+  /* The copy exists only to make the loop seamless. With no loop it would just
+     be the same words printed twice. */
+  .marquee-group[aria-hidden="true"] {
+    display: none;
+  }
+}
