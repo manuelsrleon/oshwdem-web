@@ -1,0 +1,422 @@
+:root {
+    background-color: var(--color-background);
+    color: var(--color-foreground)
+}
+
+#schedule-page-container {
+    box-sizing: border-box;
+    height: 100%;
+    
+}
+#livestreaming-container {
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    text-align: center;
+}
+#coming-soon {
+    --title-pulse-min: 1;
+    --title-pulse-max: 1.12;
+    --title-pulse-period: 0.6s;
+    --title-tilt: -5deg;
+    
+    transform-origin: center;
+    font-size: 5rem;    
+    display: inline-block;
+    text-align: center;
+    justify-self: center;
+    rotate: var(--title-tilt);
+    animation: pulse var(--title-pulse-period) linear infinite alternate;
+    overflow: visible;
+    width: 40rem;
+    align-self: center;
+    text-shadow: #000 2px 2px;
+    max-width: 80vw;
+}
+
+@keyframes pulse {
+    from { scale: var(--title-pulse-min);}
+    to {scale: var(--title-pulse-max)}
+}
+@media (prefers-reduced-motion: reduce) {
+  .coming-soon { animation: none; scale: var(--cs-max); }
+  .mystery-pattern { animation: none; }
+}
+
+.schedule {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-auto-rows: max-content;
+    /* each row = 30 min */
+    gap: 4px;
+    font-family: 'BakBak One', sans-serif;
+}
+.schedule-header, .activity.otro {
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    color: var(--color-background);
+    text-align: center;
+    font-size: 1rem;
+}
+.live-header {
+    display: flex;
+    background-color: purple;
+    background-color: #2E0561;
+    opacity: 1.0;
+    --grid-color: #fff3;
+    background: repeating-linear-gradient(45deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(135deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), #2E0561;
+    padding: 2em;
+    max-width: 100vw;
+}
+
+.content-marquee {
+    background-color: var(--accent-color);
+    color: var(--color-background);
+    text-transform: uppercase;
+    padding: 1rem;
+    font-size: 1.5em;
+}
+section {
+    padding: 3em;
+}
+.section-title {
+    font-size: 1.5em;
+    text-transform: uppercase;
+}
+.schedule-title {
+    display: flex;
+    flex-direction: row;
+    padding: auto;
+    font-size: 72px;
+    text-align: center;
+}
+
+.activity {
+    padding: 6px;
+    border-radius: 10px;
+    font-size: 1rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    border: 0px solid white;
+    /* Positioned so DOM order decides stacking: mystery activities render first
+       and stay behind the real ones that overlap them. */
+    position: relative;
+}
+
+/* Dark palette */
+.activity.taller {
+    background: #0d47a1;
+    position: relative;
+    z-index: 11;
+}
+
+.activity.charla {
+    background: #00aeff;
+    position: relative;
+}
+
+.activity.competicion {
+    background: var(--accent-color);
+    color: var(--color-background)
+}
+
+.activity.apertura,
+.activity.cierre {
+    color:black;
+    background: white;
+}
+
+.activity.exposicion {
+    align-items: flex-end;
+    background-color: rgb(140, 0, 153);
+    z-index: 10;
+}
+
+.schedule-oshwdem-logo {
+    padding: 1rem;
+    filter: invert();
+    height: 12rem;
+}
+
+.taller-marker{
+    content: 'Taller';
+    color: black;
+    background-color: white;
+    border-radius: 10px;
+    padding: 1rem 0.2rem;
+    margin: 0.5rem;
+    font-family: 'BakBak One', 'Helvetica', 'sans-serif';
+}
+
+.charla-marker {
+    content: 'Charla';
+    color: white;
+    background-color: black;
+    border-radius: 10px;
+    padding: 1rem 0.2rem;
+    margin: 0.5rem;
+    font-family: 'BakBak One', 'Helvetica', 'sans-serif';
+}
+
+.status-marker {
+    border-radius: 10px;
+    padding: 1rem 0.2rem;
+    margin: 0.5rem;
+    font-family: 'BakBak One', 'Helvetica', 'sans-serif';
+}
+
+.moved-marker {
+    color: black;
+    background-color: #ffc400;
+}
+
+.cancelled-marker {
+    color: white;
+    background-color: #b00020;
+}
+
+/* Cancelled stays on the grid so people who planned around it see it's off. */
+.activity.status-cancelled {
+    opacity: 0.55;
+    filter: grayscale(0.7);
+}
+
+.activity.status-cancelled .activity-text strong {
+    text-decoration: line-through;
+}
+
+.activity.status-moved {
+    outline: 2px dashed #ffc400;
+    outline-offset: -2px;
+}
+
+.schedule-status {
+    margin: 2rem;
+    font-size: 1.2rem;
+}
+
+.schedule-error {
+    color: #ff6b6b;
+}
+
+.stands-container{
+    display:flex;
+    margin:2rem;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap:1rem;
+    /* The list dissolves rather than stopping on a hard edge, so it reads as
+       "there's more still to come". */
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+}
+.heading-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.heading-row  > h2 { 
+    flex-grow: 1;
+}
+
+.call-inscription{
+    background-color: var(--accent-color);
+    text-transform: uppercase;
+    color: var(--color-background);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    font-family: 'BakBak One', 'sans-serif';
+}
+.call-button{
+    display: flex;
+    gap: 15px;
+    background-color: black;
+    align-items: center;
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: 0px 0px 0px 12px black,
+                0px 0px 20px 15px var(--accent-color);
+    border: 10px solid rgba(222, 219, 202, 0.854);
+}
+.ribbon-ending{
+    display: flex;
+    background: #4f0000;
+    background: linear-gradient(  rgba(255, 0, 0, 1) 0%, rgba(255, 0, 0, 1) 33%, rgba(5, 153, 81, 1) 33.1%, rgba(5, 153, 81, 1) 66%,  rgba(255, 255, 255, 1) 66%) rgba(255, 255, 255, 1) 84%;
+    flex-grow: 0.3;
+    height: 30px;
+    transform: translateX(-50px);
+    mask-image: linear-gradient(90deg, black 30%, transparent 85%);
+    border: 10px solid black;
+    z-index: -1;
+}
+
+.pulsating-text-lcd {
+    animation: pulsating-lcd 0.7s ease-out 1s infinite alternate;
+}
+
+@keyframes pulsating-lcd {
+    0% {
+        filter: opacity(0);
+    }
+    100% {
+        filter: opacity(1);
+    }
+}
+
+.c4m-soon, .c4m-open, .c4m-closed {
+    font-size: 2rem;
+}
+
+.c4m-soon {
+    color: cyan
+}
+.c4m-open {
+    color: lime
+}
+.c4m-closed {
+    color: red
+}
+.stand {
+    padding:2rem;
+    background-color: rgb(140, 0, 153);
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+.competition-container {
+    display:grid;
+    grid-auto-columns: auto;
+    gap: 15px;
+}
+.competition {
+    background-color: white;
+    color: black;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+@media screen and (max-width: 640px) {
+    .schedule-header {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        justify-content: center;
+        font-size: 1rem !important;
+    }
+    .live-header{
+        max-width: 100vw;
+        flex-direction: column;
+        padding: 0.5rem;
+    }
+    section {
+        padding: 1rem;
+    }
+    .schedule-oshwdem-logo{
+        padding: 0.5rem;
+    }
+    #coming-soon{
+        font-size: 2rem;
+        padding:1.5rem;
+    }
+    :has(.charla-marker), :has(.taller-marker) {
+        flex-direction: column;
+    }
+    .charla-marker, .taller-marker {
+        padding: 0 1rem;
+
+    }
+    .stands-container{
+        flex-direction: column;
+        margin:0;
+        
+    }
+    .stand {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+.stand-time {
+    padding:0;
+    margin:0;;
+}
+.stand-exhibitors {
+    padding:0;
+    margin:0;
+}
+
+/* Hour-long holes in the Laboratorio column: nothing announced there yet, so
+   instead of sitting empty the slot shows a mystery activity. */
+.activity.mystery {
+    overflow: hidden;
+    padding: 0;
+    min-height: 5rem;
+    /* Opaque: the striped board showing through would read as noise behind the
+       question marks. */
+    background-color: #15121f;
+    border: 2px dashed rgba(255, 255, 255, 0.25);
+}
+/* Talks and workshops*/
+.tw-container{
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.activity-tw{
+    background-color: cyan;
+    color: var(--color-background);
+    padding: 15px; 
+    border-radius: var(--border-radius);
+
+}
+/* This year's exhibitors aren't signed up yet either, so the exposition shows
+   mystery stands rather than last year's line-up. */
+.stand.mystery {
+    position: relative;
+    overflow: hidden;
+    /* Sized to sit where a real stand card sits: a name, a time, an exhibitor
+       line and a few lines of description inside .stand's 2rem padding. Nothing
+       measures it, so this is the one value to retune if the real cards land
+       taller or shorter. */
+    min-height: 19rem;
+    background-color: #15121f;
+    border: 2px dashed rgba(255, 255, 255, 0.25);
+}
+
+/* A tiled ? scrolling diagonally. Tiling is what makes the loop seamless: the
+   animation travels exactly one tile on each axis, so the last frame lands on a
+   pattern identical to the first. Oversized by a tile in every direction so the
+   travel never drags an edge into view, and moved with transform rather than
+   background-position so it animates on the compositor.
+
+   The mark is BakBak One's ? as an outline rather than text: an SVG used as
+   background-image renders in an isolated context and cannot reach a web font
+   the document loaded, so text here would silently fall back to Helvetica. */
+.mystery-pattern {
+    /* One knob: the tile size doubles as the distance the animation travels, so
+       the loop closes on an identical frame whatever size the tile is set to. */
+    --mystery-tile: 64px;
+    position: absolute;
+    inset: calc(var(--mystery-tile) * -1);
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='64'%20height='64'%3E%3Cdefs%3E%3Cpath%20id='q'%20fill='rgba(255,255,255,0.18)'%20d='M50%20486V605Q88%20623%20134.0%20631.5Q180%20640%20220%20640Q302%20640%20350.5%20622.5Q399%20605%20420.5%20566.0Q442%20527%20442%20463Q442%20418%20433.5%20387.0Q425%20356%20391%20323L360%20295Q335%20272%20323.5%20260.5Q312%20249%20309.5%20238.5Q307%20228%20307%20207V169H156V197Q156%20230%20158.5%20250.0Q161%20270%20172.5%20287.5Q184%20305%20211%20328L237%20352Q264%20377%20277.0%20391.5Q290%20406%20294.5%20420.0Q299%20434%20299%20455Q299%20490%20274.5%20501.5Q250%20513%20191%20513Q119%20513%2055%20485ZM312%20115Q315%2081%20315%2058Q315%2034%20312%201Q291%20-3%20271.0%20-5.0Q251%20-7%20231%20-7Q212%20-7%20192.5%20-5.0Q173%20-3%20154%201Q151%2017%20150.0%2031.0Q149%2045%20149%2058Q149%2069%20150.0%2083.5Q151%2098%20154%20115Q173%20119%20193.0%20120.5Q213%20122%20233%20122Q253%20122%20272.5%20120.5Q292%20119%20312%20115Z'/%3E%3C/defs%3E%3Cuse%20href='%23q'%20transform='translate(6.16%2028.66)%20scale(0.04%20-0.04)'/%3E%3Cuse%20href='%23q'%20transform='translate(38.16%2060.66)%20scale(0.04%20-0.04)'/%3E%3C/svg%3E");
+    background-size: var(--mystery-tile) var(--mystery-tile);
+    animation: mystery-drift 7s linear infinite;
+    will-change: transform;
+}
+
+@keyframes mystery-drift {
+    from { transform: translate(0, 0); }
+    to { transform: translate(var(--mystery-tile), var(--mystery-tile)); }
+}
+
+/* The marks are decorative; screen readers get this instead. */
+.mystery-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
