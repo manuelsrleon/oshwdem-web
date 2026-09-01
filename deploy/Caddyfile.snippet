@@ -1,0 +1,24 @@
+# Append these two blocks to the Caddyfile already mounted into your Caddy
+# container, then validate + reload (see README.md). Do not replace the file:
+# it is serving other sites.
+#
+# `basic_auth` is the Caddy v2.8+ spelling. On older Caddy it is `basicauth`.
+# Check with: docker exec <caddy> caddy version
+
+live.oshwdem.org {
+    encode gzip zstd
+    reverse_proxy oshwdem-live-prod:8080
+}
+
+live-dev.oshwdem.org {
+    encode gzip zstd
+
+    # Staging copy of a public event site: gate it, and keep it out of
+    # search results so it never outranks the real one.
+    basic_auth {
+        oshwdem REPLACE_WITH_HASH
+    }
+    header X-Robots-Tag "noindex, nofollow"
+
+    reverse_proxy oshwdem-live-dev:8080
+}

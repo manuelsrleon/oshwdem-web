@@ -1,0 +1,38 @@
+name: Deploy
+
+# Deploys an image that already exists in GHCR. Builds nothing.
+# Promotion to prod = running this with the same tag already verified on dev.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options: [dev, prod]
+        default: dev
+      tag:
+        description: "Image tag to deploy, e.g. sha-abc1234"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      # The key is pinned to a forced command server-side, and deploy.sh
+      # validates both arguments, so these inputs cannot reach a shell.
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/id_ed25519 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "deploy ${{ inputs.environment }} ${{ inputs.tag }}"
+
+      - name: Summary
+        run: echo "Deployed \`${{ inputs.tag }}\` to **${{ inputs.environment }}**" >> "$GITHUB_STEP_SUMMARY"
