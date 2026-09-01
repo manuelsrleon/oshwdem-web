@@ -212,6 +212,72 @@ section {
     -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 }
+.heading-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.heading-row  > h2 { 
+    flex-grow: 1;
+}
+
+.call-inscription{
+    background-color: var(--accent-color);
+    text-transform: uppercase;
+    color: var(--color-background);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    font-family: 'BakBak One', 'sans-serif';
+}
+.call-button{
+    display: flex;
+    gap: 15px;
+    background-color: black;
+    align-items: center;
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: 0px 0px 0px 12px black,
+                0px 0px 20px 15px var(--accent-color);
+    border: 10px solid rgba(222, 219, 202, 0.854);
+}
+.ribbon-ending{
+    display: flex;
+    background: #4f0000;
+    background: linear-gradient(  rgba(255, 0, 0, 1) 0%, rgba(255, 0, 0, 1) 33%, rgba(5, 153, 81, 1) 33.1%, rgba(5, 153, 81, 1) 66%,  rgba(255, 255, 255, 1) 66%) rgba(255, 255, 255, 1) 84%;
+    flex-grow: 0.3;
+    height: 30px;
+    transform: translateX(-50px);
+    mask-image: linear-gradient(90deg, black 30%, transparent 85%);
+    border: 10px solid black;
+    z-index: -1;
+}
+
+.pulsating-text-lcd {
+    animation: pulsating-lcd 0.7s ease-out 1s infinite alternate;
+}
+
+@keyframes pulsating-lcd {
+    0% {
+        filter: opacity(0);
+    }
+    100% {
+        filter: opacity(1);
+    }
+}
+
+.c4m-soon, .c4m-open, .c4m-closed {
+    font-size: 2rem;
+}
+
+.c4m-soon {
+    color: cyan
+}
+.c4m-open {
+    color: lime
+}
+.c4m-closed {
+    color: red
+}
 .stand {
     padding:2rem;
     background-color: rgb(140, 0, 153);
@@ -275,8 +341,7 @@ section {
 }
 .stand-exhibitors {
     padding:0;
-    margin:0;;
-
+    margin:0;
 }
 
 /* Hour-long holes in the Laboratorio column: nothing announced there yet, so

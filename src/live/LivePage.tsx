@@ -71,7 +71,7 @@ export const activities_old: Activity[] = [
 export const stands_old: Stand[] = [
   {id: "scandlive", name: "Scandlive",exhibitors: "Gerardo Barbarov", location: "maker@domus", start: "10:00", end: "19:00", interactive: true,  description: "Actividad visual interactiva que permite la participación del público asistente a la OSHWDem, creando versiones virtuales personalizadas de la mascota del evento OSHWi, mediante el uso de plantillas para pintar, modelar con plastilina o montar puzzles. Mas info en www.scandlive.orgDemo del código Processing: https://gitlab.com/SingularDevices/scandlive_oshwy_demo" },
   {id: "oledrace", name: "Open LED Race",exhibitors: "Gerardo Barbarov", location: "maker@domus", start: "10:00", end: "19:00", interactive: true,  description: "Open LED race es un juego minimalista de coches de carreras donde se utiliza una tira de LEDs inteligentes (Neopíxeles), un arduino y varios pulsadores a modo de mandos. Para que avance un coche tienes que apretar un pulsador. Cuanto más rápido lo aprietes más rápido irá tu coche. En las rampas de ascenso del circuito debes presionar más rápidamente para compensar el efecto de la gravedad simulada. Es un proyecto de código abierto, nacido en el Arduino Day de Sevilla en 2019. https://openledrace.net/proyecto-abierto/?lang=es" },
-  {id: "ti", name: "Talentos Inclusivos (CITIC)", exhibitors: "Equipo Talentos Inclusivos", location: "maker@domus", start: "10:00", end: "14:00", interactive: true, description: "Tecnologías accesibles: Realidad Virtual, juegos para el trabajo de habilidades cognitivas en personas con discapacidad intelectual.  Switch, Mario Kart con adaptación para el manejo de mando a través do tronco o de la cabeza.  Juegos personalizados para el ámbito de las personas con discapacidad: “Compra con-migo».  Demostración de pintura con producto de apoyo de cabeza y exposición de retos tecnológicos del proyecto Talentos Inclusivos."},
+  {id: "ti", name: "Talentos Inclusivos (CITIC)", exhibitors: "Equipo Talentos Inclusivos", location: "maker@domus", start: "10:00", end: "14:00", interactive: true, description: "Tecnolo^gías accesibles: Realidad Virtual, juegos para el trabajo de habilidades cognitivas en personas con discapacidad intelectual.  Switch, Mario Kart con adaptación para el manejo de mando a través do tronco o de la cabeza.  Juegos personalizados para el ámbito de las personas con discapacidad: “Compra con-migo».  Demostración de pintura con producto de apoyo de cabeza y exposición de retos tecnológicos del proyecto Talentos Inclusivos."},
   {id: "sarmy", name: "SysArmy Galicia (Comunidad)", exhibitors: "Tizi & Nacho", location: "maker@domus", start: "10:00", end: "17:00", interactive: true,  description: "El soporte de los que dan soporte. Compartir diversos cacharros con relación a la administración de sistemas. Juego con leaderboard de montaje de cables de red a contrarreloj"},
   {id: "crecercreando", name: "Crecer Creando", exhibitors: "Ana Rodríguez", location: "maker@domus", start: "10:00", end: "19:00", interactive: true,  description: "Crecer Creando presenta dos propuestas educativas con licencia libre: Invasión: un juego matemático para entrenar cálculo mental de forma competitiva y divertida. Pirámides fractales: un reto de lógica y razonamiento espacial en impresión 3D. Ambos forman parte del método Crecer Creando, donde capacidades como el pensamiento computacional y el cálculo mental se entrenan desde el juego y la emoción."},
   {id: "bancoreciclaxe", name: "Banco de Reciclaxe Enxeñería Sen Fronteiras", exhibitors: "Sergio Alvariño, Jorge Lama", location: "maker@domus", start: "10:00", end: "19:00", interactive: false,  description: "Nuestra idea es presentar nuestras actividades al público, explicando las labores que llevamos a cabo en el Banco de Reciclaxe y también el Repair Café que hacemos en colaboración con BricoLabs."},
@@ -197,11 +197,9 @@ export default function SchedulePage() {
     <ContentMarquee></ContentMarquee>
     <Inscriptions></Inscriptions>
     <Schedule></Schedule> 
-    
-    {/* TODO <TalksAndWorkshops></TalksAndWorkshops> */}
+    <Competitions></Competitions>
+    <TalksAndWorkshops></TalksAndWorkshops>
     <Stands></Stands>
-    {/* TODO <Competitions></Competitions> */}
-    {/* TODO <Sponsors></Sponsors> */}
     </div>
     
   )
@@ -225,7 +223,11 @@ const MYSTERY_STANDS = 5;
 export function Stands() {
   return (
     <section>
-      <h2>Stands de la exposición maker</h2>
+      <div className="heading-row">
+        <h2>Puestos, talleres, conferencias y actividades ;) </h2> 
+        <Call4MakersSign></Call4MakersSign>
+        <div className="ribbon-ending"></div> 
+      </div>
       <div className="stands-container">
         {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
           <div className="stand mystery" key={i}>
@@ -275,11 +277,11 @@ export function Schedule() {
 
   const mysteryActivities = findMysteryActivities(activities, originMinutes);
 
-  if (loading) return <div className="schedule-status">Cargando horario…</div>;
+  if (loading) return <div className="schedule-status">Cargando programa…</div>;
   if (error) {
     return (
       <div className="schedule-status schedule-error">
-        ¡No se pudo cargar el horario! ¡Comprueba tu conexión a internet! O quizás nuestra base de datos esté de vacaciones.
+        ¡No se pudo cargar el programa! ¡Comprueba tu conexión a internet! O quizás nuestra base de datos esté de vacaciones.
       </div>
     );
   }
@@ -288,7 +290,7 @@ export function Schedule() {
   return (
     <>
     <section>
-      <h2>Horario del evento</h2>
+      <h2>Programa del evento</h2>
       <div className="schedule-container">
         <div className="schedule">
 
@@ -397,3 +399,14 @@ export function Schedule() {
     </section>
   }
 
+export function Call4MakersSign(){
+  
+  var call4MakersStatuses = ["SOON", "OPEN", "CLOSED", ]
+  var call4MakersStatus = call4MakersStatuses[0]
+  return <div className="call-button">
+          {call4MakersStatus == "SOON"? <div className="c4m-soon">🛠️ CALL 4 MAKERS: ¡PRÓXIMAMENTE!</div>: <></>}
+          {call4MakersStatus == "OPEN"? <><div className="pulsating-text-lcd c4m-open">🛠️ CALL 4 MAKERS: ¡ABIERTO!</div><a href="" className="call-inscription">¡Envíanos tu propuesta aquí!</a></>: <></>}
+          {call4MakersStatus == "CLOSED"? <div className="c4m-closed">🛠️ CALL 4 MAKERS: CERRADO</div>: <></>}
+      
+        </div>
+}
