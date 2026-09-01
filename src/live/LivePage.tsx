@@ -198,7 +198,7 @@ export default function SchedulePage() {
     <Inscriptions></Inscriptions>
     <Schedule></Schedule> 
     <Competitions></Competitions>
-    <TalksAndWorkshops></TalksAndWorkshops>
+    {/* <TalksAndWorkshops></TalksAndWorkshops> */}
     <Stands></Stands>
     </div>
     
@@ -245,8 +245,7 @@ export function TalksAndWorkshops() {
     <div className="activity-tw talk">
       <img src="" alt="" />
       <h3>LANZANDO PRODUCTOS OPEN SOURCE</h3>
-      <h4>JULIÁN CARO LINARES</h4>
-      <p>¿Consideras que un proyecto open source no puede ser viable? Déjame hacerte cambiar de opinión. En esta charla repasaremos lo que hace que un proyecto open source sea comercialmente viable, sin renunciar a nuestros principios.</p>
+      <h4>Oliver Bennington</h4>
       <p>Pecera - 10:00 - 12:00</p>
       <p max-participants>15/30 asientos</p>
     </div>
