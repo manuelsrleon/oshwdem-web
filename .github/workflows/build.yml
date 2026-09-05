@@ -2,7 +2,7 @@ name: Build image
 
 on:
   push:
-    branches: [main, staging, oshwdem-2026]
+    branches: [main, staging, develop]
   workflow_dispatch:
 
 permissions:

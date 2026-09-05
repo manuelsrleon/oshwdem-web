@@ -1,24 +1,60 @@
 name: Deploy
 
 # Deploys an image that already exists in GHCR. Builds nothing.
-# Promotion to prod = running this with the same tag already verified on dev.
+#
+# There is no environment picker: the target is the branch you run this from.
+#
+#   main     -> live.oshwdem.org
+#   staging  -> sta-live.oshwdem.org
+#   develop  -> dev-live.oshwdem.org
+#
+# Promotion is therefore a merge (develop -> staging -> main) followed by a
+# run on the receiving branch. Rollback is a run with an older `tag`.
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: "Target environment"
-        type: choice
-        options: [dev, prod]
-        default: dev
       tag:
-        description: "Image tag to deploy, e.g. sha-abc1234"
-        required: true
+        description: "Image tag to deploy, e.g. sha-abc1234. Empty = this branch's HEAD."
+        required: false
+        default: ""
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    # Deploy secrets live in a GitHub environment named after the branch.
+    environment: ${{ github.ref_name }}
     steps:
+      # Branch and tag are read from env, never interpolated into the shell.
+      - name: Resolve target
+        id: target
+        env:
+          BRANCH: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          # Same table as deploy/Caddyfile.snippet.
+          case "$BRANCH" in
+            main)    url=https://live.oshwdem.org ;;
+            staging) url=https://sta-live.oshwdem.org ;;
+            develop) url=https://dev-live.oshwdem.org ;;
+            *)
+              echo "::error::branch '$BRANCH' has no environment — run this from main, staging or develop"
+              exit 1
+              ;;
+          esac
+
+          tag="${TAG:-sha-${SHA:0:7}}"
+          if [[ ! "$tag" =~ ^sha-[0-9a-f]{7,40}$ ]]; then
+            echo "::error::tag '$tag' must look like sha-abc1234"
+            exit 1
+          fi
+
+          {
+            echo "branch=$BRANCH"
+            echo "tag=$tag"
+            echo "url=$url"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
@@ -27,12 +63,14 @@ jobs:
           echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
 
       # The key is pinned to a forced command server-side, and deploy.sh
-      # validates both arguments, so these inputs cannot reach a shell.
+      # re-validates both arguments, so these cannot reach a shell.
       - name: Deploy
         run: |
           ssh -i ~/.ssh/id_ed25519 \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "deploy ${{ inputs.environment }} ${{ inputs.tag }}"
+            "deploy ${{ steps.target.outputs.branch }} ${{ steps.target.outputs.tag }}"
 
       - name: Summary
-        run: echo "Deployed \`${{ inputs.tag }}\` to **${{ inputs.environment }}**" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Deployed \`${{ steps.target.outputs.tag }}\` from **${{ steps.target.outputs.branch }}** -> ${{ steps.target.outputs.url }}" \
+            >> "$GITHUB_STEP_SUMMARY"
