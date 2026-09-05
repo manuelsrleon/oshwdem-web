@@ -1,0 +1,33 @@
+name: Build and deploy
+
+# The automatic path: every push to a branch with an environment builds an
+# image and ships it to that branch's host.
+#
+#   main     -> live.oshwdem.org
+#   staging  -> sta-live.oshwdem.org
+#   develop  -> dev-live.oshwdem.org
+#
+# Both halves are the same reusable workflows you can run by hand:
+# build.yml for an image without a deploy, deploy.yml to ship an existing
+# tag (a rollback, or a re-run against an unchanged branch).
+on:
+  push:
+    branches: [main, staging, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+
+  # deploy.yml resolves host and environment from the branch, so nothing
+  # needs to be passed here. Empty tag means "this branch's HEAD", which is
+  # exactly the image build just pushed.
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit

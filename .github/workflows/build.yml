@@ -1,8 +1,11 @@
 name: Build image
 
+# Builds and pushes the image to GHCR. Deploys nothing.
+#
+# Chained after a push by build-and-deploy.yml; run it directly to get an
+# image without shipping it.
 on:
-  push:
-    branches: [main, staging, develop]
+  workflow_call:
   workflow_dispatch:
 
 permissions:

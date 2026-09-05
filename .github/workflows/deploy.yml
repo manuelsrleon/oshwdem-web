@@ -8,14 +8,26 @@ name: Deploy
 #   staging  -> sta-live.oshwdem.org
 #   develop  -> dev-live.oshwdem.org
 #
-# Promotion is therefore a merge (develop -> staging -> main) followed by a
-# run on the receiving branch. Rollback is a run with an older `tag`.
+# build-and-deploy.yml calls this after every push, so promotion is just a
+# merge: develop -> staging -> main, each one shipping itself on arrival.
+#
+# Run it by hand to deploy without building -- a rollback to an older `tag`,
+# or a re-run against a branch whose image already exists.
 on:
   workflow_dispatch:
     inputs:
       tag:
         description: "Image tag to deploy, e.g. sha-abc1234. Empty = this branch's HEAD."
         required: false
+        default: ""
+  # Called by build.yml once the image is in GHCR. Push to develop deploys
+  # itself; main and staging stay manual, so promotion remains deliberate.
+  workflow_call:
+    inputs:
+      tag:
+        description: "Image tag to deploy, e.g. sha-abc1234. Empty = this branch's HEAD."
+        required: false
+        type: string
         default: ""
 
 jobs:
