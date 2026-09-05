@@ -1,0 +1,29 @@
+# Lives on the server at /opt/oshwdem-live/compose.yaml
+#
+# Both services run the SAME image at different tags. Promoting to prod
+# means pointing PROD_TAG at a tag already verified on dev — not rebuilding.
+#
+# No `ports:` on purpose: Caddy reaches these over its own Docker network,
+# so nothing is published on the host. This is a shared machine.
+
+name: oshwdem-live
+
+services:
+  prod:
+    image: ghcr.io/manuelsrleon/oshwdem-web:${PROD_TAG:?set PROD_TAG in .env}
+    container_name: oshwdem-live-prod
+    restart: unless-stopped
+    expose: ["8080"]
+    networks: [caddy]
+
+  dev:
+    image: ghcr.io/manuelsrleon/oshwdem-web:${DEV_TAG:?set DEV_TAG in .env}
+    container_name: oshwdem-live-dev
+    restart: unless-stopped
+    expose: ["8080"]
+    networks: [caddy]
+
+networks:
+  caddy:
+    external: true
+    name: ${CADDY_NETWORK:?set CADDY_NETWORK in .env}

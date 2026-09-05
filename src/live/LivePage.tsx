@@ -415,6 +415,5 @@ export function Call4MakersSign(){
           {call4MakersStatus == "SOON"? <div className="c4m-soon">🛠️ CALL 4 MAKERS: ¡PRÓXIMAMENTE!</div>: <></>}
           {call4MakersStatus == "OPEN"? <><div className="pulsating-text-lcd c4m-open">🛠️ CALL 4 MAKERS: ¡ABIERTO!</div><a href="" className="call-inscription">¡Envíanos tu propuesta aquí!</a></>: <></>}
           {call4MakersStatus == "CLOSED"? <div className="c4m-closed">🛠️ CALL 4 MAKERS: CERRADO</div>: <></>}
-      
         </div>
 }
