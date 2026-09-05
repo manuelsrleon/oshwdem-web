@@ -54,16 +54,19 @@ export const activities_old: Activity[] = [
   { id: "oprobotsmicro", title: "Primeros pasos en un robot MicroMouse", author: "OPRobots", type: "Charla", location: "Laboratorio", start: "18:30", end: "19:00" },
   
   //competiciones
-  { id: "laberinto", title: "Laberinto", type: "Competicion", location: "Auditorio", start: "10:30", end: "12:00" },
-  { id: "combate", title: "Combate", type: "Competicion", location: "Auditorio", start: "12:00", end: "13:00" },
-  { id: "siguelineas", title: "Siguelineas", type: "Competicion", location: "Auditorio", start: "13:00", end: "14:00" },
-  { id: "velocistas", title: "Velocistas", type: "Competicion", location: "Auditorio", start: "15:00", end: "16:30" },
-  { id: "minisumo", title: "Mini-Sumo", type: "Competicion", location: "Auditorio", start: "16:30", end: "18:00" },
-  { id: "hebocon", title: "Hebocon", type: "Competicion", location: "Auditorio", start: "18:00", end: "19:00" },
   { id: "descanso", title: "Descanso", type: "Otro", location: "General", start: "14:00", end: "15:00" },
   { id: "cierre", title: "Cierre", type: "Otro", location: "General", start: "19:00", end: "19:30" },
 ];
 
+export const competitions = [
+  { id: "laberinto", title: "Laberinto", type: "Competicion", location: "Auditorio", start: "10:30", end: "12:00", rule_link: "https://rules.oshwdem.org/labirinto_es", "inscription_link": "https://opnform.com/forms/inscripcion-competiciones-oshwdem-2026-uknhkw", "robot_inspection_time": ""},
+  { id: "combate", title: "Combate", type: "Competicion", location: "Auditorio", start: "12:00", end: "13:00", rule_link: "https://rules.oshwdem.org/combate_es", "inscription_link": "https://opnform.com/forms/inscripcion-competiciones-oshwdem-2026-uknhkw", "robot_inspection_time": ""},
+  { id: "siguelineas", title: "Siguelíneas", type: "Competicion", location: "Auditorio", start: "13:00", end: "14:00", rule_link: "https://rules.oshwdem.org/seguelinhas_es", "inscription_link": "https://opnform.com/forms/inscripcion-competiciones-oshwdem-2026-uknhkw", "robot_inspection_time": ""},
+  { id: "velocistas", title: "Velocistas", type: "Competicion", location: "Auditorio", start: "15:00", end: "16:30", rule_link: "https://rules.oshwdem.org/velocistas_es", "inscription_link": "https://opnform.com/forms/inscripcion-competiciones-oshwdem-2026-uknhkw", "robot_inspection_time": ""},
+  // { id: "persecucion_velocistas", title: "Persecución velocistas", type:" Competicion", location: "Auditorio", start:"15:00", end: "16:30", rule_link: "https://rules.oshwdem.org/persecucion_velocistas_es", "inscription_link": "https://opnform.com/forms/inscripcion-competiciones-oshwdem-2026-uknhkw", "robot_inspection_time": ""},
+  { id: "minisumo", title: "Mini-Sumo", type: "Competicion", location: "Auditorio", start: "16:30", end: "18:00", rule_link: "https://rules.oshwdem.org/loita_sumo_es", "inscription_link": "https://opnform.com/forms/inscripcion-competiciones-oshwdem-2026-uknhkw", "robot_inspection_time": ""},
+  { id: "hebocon", title: "Hebocon", type: "Competicion", location: "Auditorio", start: "18:00", end: "19:00", rule_link: "https://rules.oshwdem.org/hebocon_es", "inscription_link": "https://opnform.com/forms/inscripcion-competiciones-oshwdem-2026-uknhkw", "robot_inspection_time": ""},
+]
 // Last year's exhibitors. Nothing is signed up for this year yet, so the page
 // shows mystery stands instead — kept here until sign-ups land. Exported only so
 // `noUnusedLocals` doesn't fail the build while it sits unused.
@@ -379,20 +382,26 @@ export function Schedule() {
     return <section> 
     </section>
   }
+  
   export function Competitions(){
     return <section>
     <h2>Competiciones</h2>
     <div className="competition-container">
-      <div className="competition"><h3>01 Laberinto</h3></div>  
-      <div className="competition"><h3>02 Combate</h3></div>
-      <div className="competition"><h3>03 Siguelíneas (Iniciación)</h3></div>
-      <div className="competition"><h3>04 Velocistas</h3></div>
-      <div className="competition"><h3>05 Mini-Sumo</h3></div>
-      <div className="competition"><h3>06 Hebocon</h3></div>
+        {
+        competitions.map( (competition, index) => 
+          <div className="competition">
+        <h3>{String(index+1).padStart(2,"0")} {competition.title}</h3>
+        <div className="competition-links">
+          <a href={competition.rule_link} className="competition-link">Reglas</a>
+          <a href={competition.inscription_link} className="competition-link">Inscripción</a>
+        </div>
+        </div>)
+        }
     </div>
     </section>
   }
-  export function Sponsors(){
+
+export function Sponsors(){
     return <section id="sponsors-display">
       <h2>A tope de power gracias a: </h2>
     </section>
@@ -401,7 +410,7 @@ export function Schedule() {
 export function Call4MakersSign(){
   
   var call4MakersStatuses = ["SOON", "OPEN", "CLOSED", ]
-  var call4MakersStatus = call4MakersStatuses[0]
+  var call4MakersStatus = call4MakersStatuses[1]
   return <div className="call-button">
           {call4MakersStatus == "SOON"? <div className="c4m-soon">🛠️ CALL 4 MAKERS: ¡PRÓXIMAMENTE!</div>: <></>}
           {call4MakersStatus == "OPEN"? <><div className="pulsating-text-lcd c4m-open">🛠️ CALL 4 MAKERS: ¡ABIERTO!</div><a href="" className="call-inscription">¡Envíanos tu propuesta aquí!</a></>: <></>}
