@@ -226,10 +226,9 @@ const MYSTERY_STANDS = 5;
 export function Stands() {
   return (
     <section>
-      <div className="heading-row">
+      <div className="heading-row md-v">
         <h2>Puestos, talleres, conferencias y actividades ;) </h2> 
         <Call4MakersSign></Call4MakersSign>
-        <div className="ribbon-ending"></div> 
       </div>
       <div className="stands-container">
         {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
@@ -411,9 +410,11 @@ export function Call4MakersSign(){
   
   var call4MakersStatuses = ["SOON", "OPEN", "CLOSED", ]
   var call4MakersStatus = call4MakersStatuses[1]
-  return <div className="call-button">
+  return <><div className="call-button">
           {call4MakersStatus == "SOON"? <div className="c4m-soon">🛠️ CALL 4 MAKERS: ¡PRÓXIMAMENTE!</div>: <></>}
-          {call4MakersStatus == "OPEN"? <><div className="pulsating-text-lcd c4m-open">🛠️ CALL 4 MAKERS: ¡ABIERTO!</div><a href="" className="call-inscription">¡Envíanos tu propuesta aquí!</a></>: <></>}
+          {call4MakersStatus == "OPEN"? <><div className="pulsating-text-lcd c4m-open">🛠️ CALL 4 MAKERS: ¡ABIERTO!</div><a href="https://opnform.com/forms/call4makers-oshwdem-2026-gpapqw" className="call-inscription">¡Envíanos tu propuesta aquí!</a></>: <></>}
           {call4MakersStatus == "CLOSED"? <div className="c4m-closed">🛠️ CALL 4 MAKERS: CERRADO</div>: <></>}
         </div>
+        <div className="ribbon-ending"></div> 
+        </>
 }

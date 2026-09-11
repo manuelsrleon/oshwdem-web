@@ -24,7 +24,13 @@ fi
 var="$(printf '%s' "$env" | tr '[:lower:]' '[:upper:]')_TAG"
 
 grep -q "^${var}=" .env || { echo "refused: ${var} missing from .env" >&2; exit 1; }
-sed -i "s|^${var}=.*|${var}=${tag}|" .env
+
+# Rewritten through the existing inode rather than with `sed -i`: that writes a
+# temp file next to .env and renames over it, which needs write permission on
+# the directory (deliberately not granted -- compose.yaml and this script live
+# there) and would strip .env's ownership and ACL on every deploy.
+new="$(sed "s|^${var}=.*|${var}=${tag}|" .env)"
+printf '%s\n' "$new" > .env
 
 docker compose pull "$env"
 docker compose up -d "$env"
