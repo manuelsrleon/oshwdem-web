@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import "./LivePage.css";
 import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum } from "./database.types";
 import {
@@ -85,7 +86,6 @@ export const stands_old: Stand[] = [
 ]
 
 const locations = ["maker@domus (3ª planta)", "Laboratorio (2ª planta)", "Competiciones (Auditorio, planta 0)"];
-
 
 const livestreamingURL = "streaming.eis.gal";
 const livestreamingAvailable = false; 
@@ -198,10 +198,10 @@ export default function SchedulePage() {
         </div>        
     </div>
     <ContentMarquee></ContentMarquee>
+    <SponsorsAndCollaborators></SponsorsAndCollaborators>
     <Inscriptions></Inscriptions>
     <Schedule></Schedule> 
     <Competitions></Competitions>
-    {/* <TalksAndWorkshops></TalksAndWorkshops> */}
     <Stands></Stands>
     </div>
     
@@ -291,7 +291,7 @@ export function Schedule() {
   return (
     <>
     <section>
-      <h2>Programa del evento</h2>
+      <h2>🕑 Programa del evento</h2>
       <div className="schedule-container">
         <div className="schedule">
 
@@ -400,11 +400,79 @@ export function Schedule() {
     </section>
   }
 
-export function Sponsors(){
-    return <section id="sponsors-display">
-      <h2>A tope de power gracias a: </h2>
+type Supporter = {
+  name: string;
+  image: string;
+  link: string;
+  tier: number;
+  monochrome: boolean;
+};
+
+const sponsors: Supporter[] = [
+  {name: "Arduino", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/arduino.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9hcmR1aW5vLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODk4NTc4NTcsImV4cCI6MTc5ODQ5Nzg1N30.g1U6A0pOpBurQrbac896KZG07PIp5sYviQfvGWrDESg", link: "https://arduino.cc", tier: 0, monochrome: false},
+  {name: "BricoGeek", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/bricogeek.jpg?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9icmljb2dlZWsuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTg1Nzg3MCwiZXhwIjoxNzk4NDk3ODcwfQ.CNfuwgUVQoGRTs1CyNpPaqRqNyHB_iC0oiUSg1GewsY", link: "https://tienda.bricogeek.com", tier: 1, monochrome: false},
+  {name: "SOBotz", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/sobotz-white.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9zb2JvdHotd2hpdGUucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTQwNiwiZXhwIjoxNzk4NTcxNDA2fQ.TopR_p7qsRT5rddkv6COsArSt_M6WpnvYW3dezATyxM", link: "https://sobotz.com", tier: 1, monochrome: true},
+  {name: "Lithuanian Bots", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/lithuanianbots-white.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9saXRodWFuaWFuYm90cy13aGl0ZS5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg5OTMxNDIxLCJleHAiOjE3OTg1NzE0MjF9.iY9wk2lyXaqV1K46oGLMM1a_C91ehdMfGudzHRsYsXY", link: "https://lithuanianbots.com", tier: 1, monochrome: true},
+  {name: "Cetronic", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/cetronic.jpg?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9jZXRyb25pYy5qcGciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg5OTMxNTUxLCJleHAiOjE3OTg1NzE1NTF9.0SoINkQgBWWfbVY6bCE3HBlZHk6A3Jb3EKMn_q3SgM0", link: "https://cetronic.es", tier: 1, monochrome: false},
+  {name: "PCBWay", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/pcbway.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9wY2J3YXkucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTc1MSwiZXhwIjoxNzk4NTcxNzUxfQ.WViodH9HvpxOmAJ-4leIJFFRvcxtV6oIvutFFNbXtOg", link: "https://pcbway.com", tier: 1, monochrome: false},
+];
+
+const institutionalCollaborators: Supporter[] = [
+  {name: "AMTEGA", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/amtega.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9hbXRlZ2EucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMjA1NSwiZXhwIjoxNzk4NTcyMDU1fQ.5rYMY0MmFI6NKsCyAyFIQq2Eo1zURWopaZAiTFiR25M", link: "https://amtega.xunta.gal", tier: 0, monochrome: false},
+  {name: "Museos Científicos", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/mc2.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9tYzIucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTg0NywiZXhwIjoxNzk4NTcxODQ3fQ.3wcPOI8UOpIZutsItPx3NhXKuHOXHBfirbDOGUgcYOk", link: "https://www.coruna.gal/mc2/es", tier: 1, monochrome: false},
+  {name: "Escola de Imaxe e Son", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/eis.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9laXMucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTg5MCwiZXhwIjoxNzk4NTcxODkwfQ.sajMcr_buPBeab8NhZwdjmYrKy4n3AM2c_ypi0IVuGc", link: "https://eis.gal", tier: 1, monochrome: false},
+  {name: "Concello de A Coruña", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/concello-da-corunha.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9jb25jZWxsby1kYS1jb3J1bmhhLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODk5MzE5MTMsImV4cCI6MTc5ODU3MTkxM30.O1b_nIvEGfr0Gz50i5K3KmOvMiFxL0SjbzWjuxuq3tk", link: "https://www.coruna.gal/", tier: 1, monochrome: false},
+];
+
+function byTier(a: Supporter, b: Supporter): number {
+  return a.tier - b.tier;
+}
+
+function SupporterWall({ supporters }: { supporters: Supporter[] }) {
+  return (
+    <div className="supporter-wall">
+      {[...supporters].sort(byTier).map(supporter => (
+        <a
+          key={supporter.name}
+          className={`supporter-card tier-${supporter.tier}${supporter.monochrome ? " monochrome" : ""}`}
+          href={supporter.link}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {supporter.image
+            ? <img className="supporter-logo" src={supporter.image} alt={supporter.name} loading="lazy" />
+            : <span className="supporter-name">{supporter.name}</span>}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+const supporterGroups = [
+  { heading: "🤝 Patrocinadores", supporters: sponsors },
+  { heading: "🏛️ Colaboradores institucionales", supporters: institutionalCollaborators },
+];
+
+export function SponsorsAndCollaborators() {
+  const groups = useMemo(
+    () => (Math.random() < 0.5 ? supporterGroups : [...supporterGroups].reverse()),
+    [],
+  );
+
+  return (
+    <section id="sponsors-and-collaborators">
+      <h2>⚡ Powered by</h2>
+      <div className="supporter-groups">
+        {groups.map(group => (
+          <div className="supporter-group" key={group.heading}>
+            <h3>{group.heading}</h3>
+            <SupporterWall supporters={group.supporters} />
+          </div>
+        ))}
+      </div>
     </section>
-  }
+  );
+}
 
 export function Call4MakersSign(){
   
