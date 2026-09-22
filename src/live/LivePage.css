@@ -221,6 +221,63 @@ section {
     flex-grow: 1;
 }
 
+#sponsors-and-collaborators {
+    background-color: gray;
+    
+}
+#sponsors-and-collaborators-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: 100px 1fr;
+    grid-auto-flow: column;
+}
+#sponsors-and-collaborators-grid > h3 {
+    height: 0rem;
+}
+#sponsors-display, #collaborators-display{
+    display:flex;
+    flex-direction: row;
+    gap: 15px;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0;
+}
+#sponsors-display:nth-child(1), #collaborators-display:nth-child(1) {
+
+}
+
+.sponsor, .collaborator {
+    background-color: white;
+    border-radius: var(--border-radius);
+}
+.sponsor > img, .collaborator > img {
+    text-align: center;
+    width: 400px;
+    border-radius: 15px;
+    padding: 15px;
+}
+.sponsor.tier0, .collaborator.tier0 {
+    grid-column: 0 / span 2;
+    grid-row: 0 / span 2;
+    width: 400px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+}
+.sponsor.tier1 {
+    /* width: 300px; */
+}
+.sponsor-tier2 {
+    /* width: 200px; */
+}
+
+.monochrome > img {
+    filter:invert(1);
+}
 .call-inscription{
     background-color: var(--accent-color);
     text-transform: uppercase;
