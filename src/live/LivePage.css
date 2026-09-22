@@ -12,8 +12,10 @@
     display:flex;
     flex-direction: column;
     justify-content: center;
-    width: 100%;
+    flex: 1 1 20rem;
+    min-width: 0;
     text-align: center;
+    container-type: inline-size;
 }
 #coming-soon {
     --title-pulse-min: 1;
@@ -22,17 +24,18 @@
     --title-tilt: -5deg;
     
     transform-origin: center;
-    font-size: 5rem;    
+    font-size: clamp(1.75rem, 10.5cqw, 5rem);
     display: inline-block;
     text-align: center;
     justify-self: center;
     rotate: var(--title-tilt);
     animation: pulse var(--title-pulse-period) linear infinite alternate;
     overflow: visible;
-    width: 40rem;
+    width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
     align-self: center;
     text-shadow: #000 2px 2px;
-    max-width: 80vw;
 }
 
 @keyframes pulse {
@@ -66,8 +69,13 @@
     opacity: 1.0;
     --grid-color: #fff3;
     background: repeating-linear-gradient(45deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(135deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), #2E0561;
-    padding: 2em;
-    max-width: 100vw;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.5rem, 2vw, 1.5rem);
+    padding: clamp(1rem, 2.5vw, 2em);
+    box-sizing: border-box;
+    max-width: 100%;
 }
 
 .content-marquee {
@@ -137,7 +145,10 @@ section {
 .schedule-oshwdem-logo {
     padding: 1rem;
     filter: invert();
-    height: 12rem;
+    height: clamp(5rem, 9vw, 12rem);
+    width: auto;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .taller-marker{
@@ -380,8 +391,8 @@ section {
         font-size: 1rem !important;
     }
     .live-header{
-        max-width: 100vw;
         flex-direction: column;
+        align-items: stretch;
         padding: 0.5rem;
     }
     section {
@@ -392,7 +403,8 @@ section {
     }
     #coming-soon{
         font-size: 2rem;
-        padding:1.5rem;
+        padding: 0.75rem;
+        max-width: 92%;
     }
     :has(.charla-marker), :has(.taller-marker) {
         flex-direction: column;
@@ -495,4 +507,114 @@ section {
     clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
+}
+
+#sponsors-and-collaborators {
+    --grid-color: #ffffff0f;
+    background:
+        repeating-linear-gradient(45deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px),
+        repeating-linear-gradient(135deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px),
+        linear-gradient(180deg, #1d1533 0%, #14111d 100%);
+}
+
+#sponsors-and-collaborators > h2 {
+    font-size: clamp(2rem, 7vw, 2.8rem);
+    margin: 0 0 1.5rem;
+}
+
+.supporter-groups {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+@media screen and (min-width: 60rem) {
+    .supporter-groups {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.supporter-group > h3 {
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    margin: 0 0 1rem;
+}
+
+.supporter-wall {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: clamp(0.6rem, 2vw, 1rem);
+}
+
+.supporter-card {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    min-height: 10rem;
+    padding: clamp(0.75rem, 2vw, 1.1rem);
+    background-color: #fff;
+    border-radius: var(--border-radius);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.supporter-logo {
+    display: block;
+    max-width: 110%;
+    max-height: 6.75rem;
+    object-fit: contain;
+}
+
+.supporter-card.tier-0 {
+    grid-column: 1 / -1;
+    min-height: clamp(10rem, 28vw, 16rem);
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+    box-shadow: 0 0 0 3px var(--accent-color), 0 14px 32px #0008;
+}
+
+.supporter-card.tier-0 .supporter-logo {
+    max-height: clamp(6.5rem, 20vw, 12rem);
+    max-width: min(110%, 34rem);
+}
+
+.supporter-card.tier-2 {
+    min-height: 4.5rem;
+}
+
+.supporter-card.tier-2 .supporter-logo {
+    max-height: 2.5rem;
+}
+
+.supporter-card.monochrome .supporter-logo {
+    filter: brightness(0);
+}
+
+.supporter-name {
+    color: var(--color-background);
+    font-family: 'BakBak One', 'sans-serif';
+    font-size: 1.1rem;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.supporter-card.tier-0 .supporter-name {
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+}
+
+.supporter-card:hover,
+.supporter-card:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 3px var(--accent-color), 0 12px 26px #0009;
+}
+
+.supporter-card:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .supporter-card {
+        transition: none;
+    }
+    .supporter-card:hover,
+    .supporter-card:focus-visible {
+        transform: none;
+    }
 }
