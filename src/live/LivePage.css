@@ -564,7 +564,7 @@ section {
     display: grid;
     place-items: center;
     box-sizing: border-box;
-    min-height: 10rem;
+    min-height: clamp(3rem, 10vw, 10rem);
     padding: clamp(0.75rem, 2vw, 1.1rem);
     background-color: #fff;
     border-radius: var(--border-radius);
@@ -580,7 +580,7 @@ section {
 
 .supporter-card.tier-0 {
     grid-column: 1 / -1;
-    min-height: clamp(10rem, 28vw, 16rem);
+    min-height: clamp(10rem, 28vw, 20rem);
     padding: clamp(1.25rem, 4vw, 2.5rem);
     box-shadow: 0 0 0 3px var(--accent-color), 0 14px 32px #0008;
 }
