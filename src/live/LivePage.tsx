@@ -411,7 +411,11 @@ export function Schedule() {
     <div className="competition-container">
         {
         competitions.map( (competition, index) => 
-          <div key={competition.id} className="competition">
+          <div
+            key={competition.id}
+            className="competition medal-pattern"
+            style={medalStyle(competition.id)}
+          >
         <h3>{String(index+1).padStart(2,"0")} {competition.title}</h3>
         <div className="competition-links">
           <a href={competition.rule_link} className="competition-link">Reglas</a>

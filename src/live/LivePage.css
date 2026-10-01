@@ -396,6 +396,10 @@ section {
     -webkit-mask-position: right -30px center;
     mask-position: right -30px center;
 }
+/* The cards are roomier than timetable cells, so their medal is a bit larger. */
+.competition.medal-pattern {
+    --medal-size: 300px;
+}
 .competition-link {
     background-color: var(--color-background);
     color: var(--color-foreground);
