@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import "./LivePage.css";
 import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum, MakerProposalTypeEnum } from "./database.types";
 import {
@@ -93,7 +93,8 @@ export const stands_old: Stand[] = [
 const locations = ["maker@domus (3ª planta)", "Laboratorio (2ª planta)", "Competiciones (Auditorio, planta 0)"];
 
 const livestreamingURL = "streaming.eis.gal";
-const livestreamingAvailable = false; 
+const EVENT_START = new Date("2026-10-03T10:00:00+02:00");
+const EVENT_END = new Date("2026-10-03T19:30:00+02:00");
 
 // oshwdem_activity.type -> the CSS/layout categories the grid understands.
 
@@ -241,27 +242,119 @@ export default function SchedulePage() {
   return (
     
     <div id="schedule-page-container"> 
-    <div className="live-header">
-        <img src="/logo-oshwdem-2026.svg" className="schedule-oshwdem-logo" alt="" />
+    <header className="live-header">
+        <div className="live-header-brand">
+          <img src="/logo-oshwdem-2026.svg" className="schedule-oshwdem-logo" alt="OSHWDem 2026" />
+          <p className="event-date">Sábado, 3 de octubre de 2026</p>
+          <Countdown></Countdown>
+        </div>
         <div id="livestreaming-container">
-          <h3>Enlace a la retransmisión en directo:</h3>  
-          {livestreamingURL && livestreamingAvailable?<LivestreamingBanner></LivestreamingBanner> :<ComingSoon></ComingSoon>}
-        </div>        
-    </div>
+          <LivestreamingBanner></LivestreamingBanner>
+        </div>
+        <ScrollHint></ScrollHint>
+    </header>
     <ContentMarquee></ContentMarquee>
     <Schedule></Schedule> 
     <SponsorsAndCollaborators></SponsorsAndCollaborators>
     <Competitions></Competitions>
     <Stands></Stands>
+    <BackToTop></BackToTop>
     </div>
     
   )
 }
+
+function Countdown() {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  if (now >= EVENT_END.getTime()) {
+    return <p className="countdown-message">¡Gracias por venir! Nos vemos en la próxima edición</p>;
+  }
+  if (now >= EVENT_START.getTime()) {
+    return <p className="countdown-message countdown-live">¡Estamos en marcha!</p>;
+  }
+
+  const totalSeconds = Math.floor((EVENT_START.getTime() - now) / 1000);
+  const units = [
+    { label: "días", value: Math.floor(totalSeconds / 86400) },
+    { label: "horas", value: Math.floor(totalSeconds / 3600) % 24 },
+    { label: "min", value: Math.floor(totalSeconds / 60) % 60 },
+    { label: "seg", value: totalSeconds % 60 },
+  ];
+
+  return (
+    <div className="countdown" role="timer" aria-label="Cuenta atrás para OSHWDem 2026">
+      {units.map(unit => (
+        <div className="countdown-unit" key={unit.label}>
+          <span className="countdown-value">{String(unit.value).padStart(2, "0")}</span>
+          <span className="countdown-label">{unit.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ScrollHint() {
+  const scrollPastHeader = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    event.currentTarget.closest("header")?.nextElementSibling?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  };
+
+  return (
+    <button type="button" className="scroll-hint" onClick={scrollPastHeader} aria-label="Ver el programa">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
+const BACK_TO_TOP_THRESHOLD = 600;
+
+function BackToTop() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > BACK_TO_TOP_THRESHOLD);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  };
+
+  return (
+    <button
+      type="button"
+      className={`back-to-top${visible ? " visible" : ""}`}
+      onClick={scrollToTop}
+      tabIndex={visible ? 0 : -1}
+    >
+      <svg className="back-to-top-arrow" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      Volver arriba
+    </button>
+  );
+}
 export function LivestreamingBanner() {
   return ( 
-    <div id="livestreaming-banner">
-     <p> Proporcionado por la EIS</p>
-    </div>
+    <a id="livestreaming-banner" href={`https://${livestreamingURL}`} target="_blank" rel="noopener noreferrer">
+      <img className="livestreaming-logo" src="/sponsor-logos/Logo2Negro_EIS.png" alt="Escola de Imaxe e Son" />
+      <span className="livestreaming-text">
+        <span className="livestreaming-cta">Ver en directo</span>
+        <span className="livestreaming-url">{livestreamingURL}</span>
+        <span className="livestreaming-credit">Retransmisión de la EIS</span>
+      </span>
+    </a>
   )
 }
 export function ComingSoon() {
@@ -626,10 +719,11 @@ export function Call4MakersSign(){
   
   var call4MakersStatuses = ["SOON", "OPEN", "CLOSED", ]
   var call4MakersStatus = call4MakersStatuses[2]
-  return <><div className="call-button">
+  if (call4MakersStatus == "CLOSED") return null
+  return <><div className={`call-button c4m-${call4MakersStatus.toLowerCase()}-glow`}>
           {call4MakersStatus == "SOON"? <div className="c4m-soon">🛠️ CALL 4 MAKERS: ¡PRÓXIMAMENTE!</div>: <></>}
           {call4MakersStatus == "OPEN"? <><div className="pulsating-text-lcd c4m-open">🛠️ CALL 4 MAKERS: ¡ABIERTO!</div><a href="https://opnform.com/forms/call4makers-oshwdem-2026-gpapqw" className="call-inscription">¡Envíanos tu propuesta aquí!</a></>: <></>}
-          {call4MakersStatus == "CLOSED"? <div className="c4m-closed">🛠️ CALL 4 MAKERS: CERRADO</div>: <></>}
+          {call4MakersStatus == "CLOSED"? <div className="c4m-closed">🛠️ CALL 4 MAKERS: FINALIZADO</div>: <></>}
         </div>
         <div className="ribbon-ending"></div> 
         </>
