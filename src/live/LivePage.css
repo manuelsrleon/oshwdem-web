@@ -12,10 +12,9 @@
     display:flex;
     flex-direction: column;
     justify-content: center;
-    flex: 1 1 20rem;
+    flex: 0 1 auto;
     min-width: 0;
     text-align: center;
-    container-type: inline-size;
 }
 #coming-soon {
     --title-pulse-min: 1;
@@ -71,7 +70,7 @@
     background: repeating-linear-gradient(45deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(135deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), #2E0561;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
+    justify-content: space-evenly;
     gap: clamp(0.5rem, 2vw, 1.5rem);
     padding: clamp(1rem, 2.5vw, 2em);
     box-sizing: border-box;
@@ -1066,15 +1065,22 @@ section {
         height: auto;
     }
     #livestreaming-banner {
-        gap: 0.75rem;
-        padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    .livestreaming-cta {
+        font-size: 1.4rem;
+    }
+    .livestreaming-url {
+        font-size: 1.15rem;
     }
 }
 
 .live-header {
     position: relative;
 }
-.live-header-brand {
+.live-header-brand,
+.live-header-event {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1098,8 +1104,8 @@ section {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.5rem;
-    width: 100%;
-    max-width: 26rem;
+    width: 22rem;
+    max-width: 100%;
 }
 .countdown-unit {
     display: flex;
@@ -1121,6 +1127,7 @@ section {
     opacity: 0.8;
 }
 .countdown-message {
+    max-width: 22rem;
     margin: 0;
     text-align: center;
     font-size: clamp(1.1rem, 3vw, 1.6rem);
@@ -1134,12 +1141,12 @@ section {
 
 @media screen and (max-width: 640px) {
     .live-header {
-        min-height: 100svh;
-        justify-content: space-evenly;
-        gap: 1.25rem;
-        padding: 1.5rem 1rem 3.5rem;
+        flex-wrap: nowrap;
+        gap: 1.5rem;
+        padding: 1.5rem 1rem 0.75rem;
     }
-    .live-header-brand {
+    .live-header-brand,
+    .live-header-event {
         gap: 1rem;
     }
     .live-header-brand > .schedule-oshwdem-logo {
@@ -1148,13 +1155,20 @@ section {
     }
     .event-date {
         align-self: stretch;
-        font-size: 1.15rem;
+        padding: 0.5rem 14px;
+        font-size: clamp(1rem, 5.5vw, 1.35rem);
     }
     .countdown {
-        max-width: none;
+        width: 100%;
+    }
+    .countdown-unit {
+        padding: 0.9rem 0.25rem;
     }
     .countdown-value {
-        font-size: 2rem;
+        font-size: clamp(2.4rem, 12vw, 3.25rem);
+    }
+    .countdown-label {
+        font-size: 0.85rem;
     }
     #livestreaming-container {
         flex: 0 0 auto;
@@ -1163,28 +1177,26 @@ section {
         align-self: stretch;
     }
     .livestreaming-logo {
-        height: 5rem;
+        height: 6.5rem;
     }
     .scroll-hint {
-        display: grid;
-        place-items: center;
-        position: absolute;
-        left: 50%;
-        bottom: 0.75rem;
-        width: 2.75rem;
-        height: 2.75rem;
-        padding: 0;
-        margin-left: -1.375rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        align-self: center;
+        padding: 0.25rem 1rem;
         border: none;
-        border-radius: 50%;
         background: transparent;
         color: var(--accent-color);
+        font-family: 'BakBak One', sans-serif;
+        font-size: 0.9rem;
+        text-transform: uppercase;
         cursor: pointer;
-        animation: scroll-hint-bounce 1.4s ease-in-out infinite;
     }
     .scroll-hint > svg {
-        width: 2rem;
-        height: 2rem;
+        width: 1.75rem;
+        height: 1.75rem;
+        animation: scroll-hint-bounce 1.4s ease-in-out infinite;
     }
 }
 @keyframes scroll-hint-bounce {
@@ -1192,7 +1204,75 @@ section {
     50% { transform: translateY(8px); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .scroll-hint {
+    .scroll-hint > svg {
         animation: none;
+    }
+}
+
+.maker-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.5rem 2rem 0;
+}
+.maker-filter {
+    --filter-color: var(--color-foreground);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--filter-color);
+    border-radius: 999px;
+    background-color: transparent;
+    color: var(--color-foreground);
+    font-family: 'BakBak One', sans-serif;
+    font-size: 1rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+.maker-filter-stand {
+    --filter-color: rgb(200, 60, 215);
+}
+.maker-filter-talk {
+    --filter-color: #00aeff;
+}
+.maker-filter-workshop_everyone {
+    --filter-color: #4d8ff0;
+}
+.maker-filter:hover {
+    background-color: #fff1;
+}
+.maker-filter[aria-pressed="true"] {
+    background-color: var(--filter-color);
+    color: var(--color-background);
+}
+.maker-filter:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
+}
+.maker-filter-count {
+    min-width: 1.5em;
+    padding: 0 0.4em;
+    border-radius: 999px;
+    background-color: #fff2;
+    font-size: 0.8em;
+    text-align: center;
+}
+.maker-filter[aria-pressed="true"] .maker-filter-count {
+    background-color: #0003;
+}
+@media (prefers-reduced-motion: reduce) {
+    .maker-filter {
+        transition: none;
+    }
+}
+@media screen and (max-width: 640px) {
+    .maker-filters {
+        margin: 1rem 0;
+    }
+    .maker-filter {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
     }
 }

@@ -8,6 +8,7 @@ import {
 import { useActivities } from "./useActivities";
 import { toByline, type Maker } from "./OSHWDemMakerRepository";
 import { useMakers } from "./useMakers";
+import { useEventInfo } from "./useEventInfo";
 
 // PENDING is deliberately absent: not yet announced, so it stays off the grid.
 const VISIBLE_STATUSES: readonly ActivityStatusEnum[] = [
@@ -93,8 +94,6 @@ export const stands_old: Stand[] = [
 const locations = ["maker@domus (3ª planta)", "Laboratorio (2ª planta)", "Competiciones (Auditorio, planta 0)"];
 
 const livestreamingURL = "streaming.eis.gal";
-const EVENT_START = new Date("2026-10-03T10:00:00+02:00");
-const EVENT_END = new Date("2026-10-03T19:30:00+02:00");
 
 // oshwdem_activity.type -> the CSS/layout categories the grid understands.
 
@@ -212,7 +211,7 @@ function findMysteryActivities(
 ): MysteryActivity[] {
   if (activities.length === 0) return [];
 
-  const lastMinute = Math.max(...activities.map(act => toMinutes(act.end)));
+  const lastMinute = Math.max(...activities.map(act => toMinutes(act.end || act.start)));
   const mysteries: MysteryActivity[] = [];
 
   for (let start = originMinutes; start < lastMinute; start += MYSTERY_MINUTES) {
@@ -223,7 +222,7 @@ function findMysteryActivities(
     const busy = activities.some(act => {
       const actColumn = columnOf(act.location);
       if (actColumn !== null && actColumn !== MYSTERY_COLUMN) return false;
-      return toMinutes(act.start) < end && toMinutes(act.end) > start;
+      return toMinutes(act.start) < end && toMinutes(act.end || act.start) > start;
     });
     if (busy) continue;
 
@@ -245,8 +244,10 @@ export default function SchedulePage() {
     <header className="live-header">
         <div className="live-header-brand">
           <img src="/logo-oshwdem-2026.svg" className="schedule-oshwdem-logo" alt="OSHWDem 2026" />
-          <p className="event-date">Sábado, 3 de octubre de 2026</p>
+        </div>
+        <div className="live-header-event">
           <Countdown></Countdown>
+          <p className="event-date">Sábado, 3 de octubre de 2026</p>
         </div>
         <div id="livestreaming-container">
           <LivestreamingBanner></LivestreamingBanner>
@@ -265,21 +266,16 @@ export default function SchedulePage() {
 }
 
 function Countdown() {
-  const [now, setNow] = useState(() => Date.now());
+  const { start, now, hasStarted, hasEnded } = useEventInfo({ tickMs: 1000 });
 
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  if (now >= EVENT_END.getTime()) {
+  if (hasEnded) {
     return <p className="countdown-message">¡Gracias por venir! Nos vemos en la próxima edición</p>;
   }
-  if (now >= EVENT_START.getTime()) {
+  if (hasStarted) {
     return <p className="countdown-message countdown-live">¡Estamos en marcha!</p>;
   }
 
-  const totalSeconds = Math.floor((EVENT_START.getTime() - now) / 1000);
+  const totalSeconds = Math.floor((start.getTime() - now) / 1000);
   const units = [
     { label: "días", value: Math.floor(totalSeconds / 86400) },
     { label: "horas", value: Math.floor(totalSeconds / 3600) % 24 },
@@ -306,7 +302,8 @@ function ScrollHint() {
   };
 
   return (
-    <button type="button" className="scroll-hint" onClick={scrollPastHeader} aria-label="Ver el programa">
+    <button type="button" className="scroll-hint" onClick={scrollPastHeader}>
+      Ver más
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -372,8 +369,16 @@ const PROPOSAL_TYPE_LABELS: Record<MakerProposalTypeEnum, string> = {
   WORKSHOP_EVERYONE: "Taller para todos los públicos",
 };
 
+const PROPOSAL_TYPE_FILTERS: { type: MakerProposalTypeEnum; label: string }[] = [
+  { type: "STAND", label: "Stands" },
+  { type: "TALK", label: "Charlas" },
+  { type: "WORKSHOP_EVERYONE", label: "Talleres" },
+];
+
 export function Stands() {
   const { makers, loading, error } = useMakers();
+  const [filter, setFilter] = useState<MakerProposalTypeEnum | null>(null);
+  const visibleMakers = filter ? makers.filter(maker => maker.proposalType === filter) : makers;
 
   return (
     <section>
@@ -395,9 +400,36 @@ export function Stands() {
           ))}
         </div>
       ) : (
-        <div className="stands-container">
-          {makers.map(maker => <MakerCard key={maker.id} maker={maker} />)}
-        </div>
+        <>
+          <div className="maker-filters" role="group" aria-label="Filtrar por tipo">
+            <button
+              type="button"
+              className="maker-filter"
+              aria-pressed={filter === null}
+              onClick={() => setFilter(null)}
+            >
+              Todo <span className="maker-filter-count">{makers.length}</span>
+            </button>
+            {PROPOSAL_TYPE_FILTERS.map(({ type, label }) => {
+              const count = makers.filter(maker => maker.proposalType === type).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  type="button"
+                  key={type}
+                  className={`maker-filter maker-filter-${type.toLowerCase()}`}
+                  aria-pressed={filter === type}
+                  onClick={() => setFilter(filter === type ? null : type)}
+                >
+                  {label} <span className="maker-filter-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="stands-container">
+            {visibleMakers.map(maker => <MakerCard key={maker.id} maker={maker} />)}
+          </div>
+        </>
       )}
     </section>
   );
@@ -478,6 +510,16 @@ export function TalksAndWorkshops() {
   </section>
 }
 
+const FAMILY_PHOTO: Activity = {
+  id: "foto-familia",
+  title: "Foto familia (Makers, competidores, voluntarios y organizadores)",
+  type: "Otro",
+  location: "General",
+  start: "19:10",
+  end: "",
+  status: "CONFIRMED",
+};
+
 export function Schedule() {
   const { activities: liveActivities, loading, error } = useActivities({
     statuses: VISIBLE_STATUSES,
@@ -492,6 +534,7 @@ export function Schedule() {
       .filter(act => act.startsAt && act.endsAt)
       .map(toGridActivity),
     ...makers.flatMap(maker => makerToGridActivity(maker) ?? []),
+    FAMILY_PHOTO,
   ];
 
   const originMinutes = activities.length
@@ -543,7 +586,7 @@ export function Schedule() {
             const startRow = timeToRow(act.start, originMinutes);
             // Never let an activity collapse to zero rows: one shorter than a row
             // (or with end == start) still needs to occupy a cell.
-            const endRow = Math.max(timeToRow(act.end, originMinutes), startRow + 1);
+            const endRow = Math.max(timeToRow(act.end || act.start, originMinutes), startRow + 1);
 
             // General has no column of its own, so it spans all three.
             const col = columnOf(act.location) ?? "1 / span 3";
@@ -582,7 +625,7 @@ export function Schedule() {
                 <div className="activity-text">
                     <strong className={TITLED_TYPES.includes(act.type) ? "activity-title" : undefined}>{act.title}</strong>
                     {act.type != "Otro"?
-                    <span className="activity-timeframe">{act.start+" - "+act.end}</span>
+                    <span className="activity-timeframe">{act.end ? act.start+" - "+act.end : act.start}</span>
                     :<></>}
                     {act.author?
                     <span className="activity-author">{act.author}</span>
@@ -618,6 +661,7 @@ export function Schedule() {
   }
   
   export function Competitions(){
+    const { hasStarted } = useEventInfo();
     return <section>
     <h2>Competiciones</h2>
     <div className="competition-container">
@@ -631,7 +675,7 @@ export function Schedule() {
         <h3>{String(index+1).padStart(2,"0")} {competition.title}</h3>
         <div className="competition-links">
           <a href={competition.rule_link} className="competition-link">Reglas</a>
-          <a href={competition.inscription_link} className="competition-link">Inscripción</a>
+          {hasStarted ? null : <a href={competition.inscription_link} className="competition-link">Inscripción</a>}
         </div>
         </div>)
         }
