@@ -11,6 +11,7 @@ export type Activity = {
   type: ActivityTypeEnum;
   startsAt: Date | null;
   endsAt: Date | null;
+  precheckStart: Date | null;
   maxPeople: number | null;
   sponsor: string | null;
   status: ActivityStatusEnum;
@@ -48,6 +49,7 @@ export function toActivity(row: ActivityRow): Activity {
     type: row.type,
     startsAt: parseTimestamp(row.starts_at),
     endsAt: parseTimestamp(row.ends_at),
+    precheckStart: parseTimestamp(row.precheck_start),
     maxPeople: row.max_people,
     sponsor: row.sponsor,
     status: row.status ?? "PENDING",

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import "./LivePage.css";
 import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum } from "./database.types";
 import {
@@ -22,6 +22,7 @@ type Activity = {
   location: ActivityLocationEnum | "General";
   start: string;
   end: string;
+  precheckStart?: string;
   status?: ActivityStatusEnum;
 };
 
@@ -103,6 +104,7 @@ function toGridActivity(activity: LiveActivity): Activity {
     location: activity.location ?? "General",
     start: toTimeLabel(activity.startsAt),
     end: toTimeLabel(activity.endsAt),
+    precheckStart: toTimeLabel(activity.precheckStart) || undefined,
     status: activity.status,
   };
 }
@@ -115,6 +117,21 @@ const MYSTERY_MINUTES = 60;
 const MYSTERY_COLUMN = 2;
 // Line 1 is the location header, so the earliest activity starts on line 2.
 const FIRST_ACTIVITY_LINE = 2;
+
+// Medal artwork lives in public/medallas, one SVG per competition.
+function medalStyle(slug: string): CSSProperties {
+  return { "--competition-medal": `url(/medallas/${slug}.svg)` } as CSSProperties;
+}
+
+// Timetable rows only have a name, so the medal is found by slugging it the way
+// the files are named: "Mini-Sumo" -> "minisumo", "Siguelíneas" -> "siguelineas".
+function toMedalSlug(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
 
 function toMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -323,12 +340,14 @@ export function Schedule() {
 
             // General has no column of its own, so it spans all three.
             const col = columnOf(act.location) ?? "1 / span 3";
+            const isCompetition = act.type == "Competicion";
 
             return (
               <div
                 key={act.id}
-                className={`activity ${act.type.toLowerCase()} ${act.status ? `status-${act.status.toLowerCase()}` : ""}`}
+                className={`activity ${act.type.toLowerCase()} ${act.status ? `status-${act.status.toLowerCase()}` : ""} ${isCompetition ? "medal-pattern" : ""}`}
                 style={{
+                  ...(isCompetition ? medalStyle(toMedalSlug(act.title)) : {}),
                   gridColumn: col,
                   gridRow: `${startRow} / ${endRow}`
                 }}
@@ -352,13 +371,17 @@ export function Schedule() {
                 :<></>}
                 <div className={act.type+"-badge"}></div>
                 <div className="activity-text">
-                    <strong>{act.title}</strong><br/>
+                    <strong className={act.type == "Competicion" || act.type == "Exposicion" ? "activity-title" : undefined}>{act.title}</strong><br/>
                     {act.author?
                     <>
                         <span className="activity-author">{act.author}</span><br/>
                     </>:<></>}
                     {act.type != "Otro"?
                     <><span className="activity-timeframe">{act.start+" - "+act.end}</span>
+                    </>:<></>
+                    }
+                    {act.type == "Competicion" && act.precheckStart?
+                    <><br/><span className="activity-precheck">{"Verificación: "+act.precheckStart}</span>
                     </>:<></>
                     }
                 </div>
@@ -388,7 +411,7 @@ export function Schedule() {
     <div className="competition-container">
         {
         competitions.map( (competition, index) => 
-          <div className="competition">
+          <div key={competition.id} className="competition">
         <h3>{String(index+1).padStart(2,"0")} {competition.title}</h3>
         <div className="competition-links">
           <a href={competition.rule_link} className="competition-link">Reglas</a>

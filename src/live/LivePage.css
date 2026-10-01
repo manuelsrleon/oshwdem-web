@@ -369,6 +369,33 @@ section {
     gap:15px;
     justify-content: space-between;
 }
+/* A competition's medal (--competition-medal), large on the right side and
+   fading out to the left. The medal is a mask (so its colour is set here, not
+   in the SVG, which is blue laser-cut line art) and the fade is in the fill it
+   masks, which avoids depending on mask-composite. */
+.medal-pattern {
+    --medal-size: 240px;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+.medal-pattern::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent 35%, var(--color-background) 85%);
+    opacity: 0.18;
+    -webkit-mask-image: var(--competition-medal);
+    mask-image: var(--competition-medal);
+    -webkit-mask-size: var(--medal-size);
+    mask-size: var(--medal-size);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: right -30px center;
+    mask-position: right -30px center;
+}
 .competition-link {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -633,4 +660,15 @@ section {
     .supporter-card:focus-visible {
         transform: none;
     }
+}
+
+.activity-precheck {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    padding: 2px 10px;
+    border-radius: 15px;
+}
+
+.activity-title {
+    font-size: 1.5rem;
 }

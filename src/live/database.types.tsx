@@ -9,6 +9,7 @@ export const ActivityTypeEnum = {
   COMPETITION: "Competicion",
   TALK: "Charla",
   STAND: "Stand",
+  EXPOSITION: "Exposicion",
   WORKSHOP: "Taller",
   OTHER: "Otro"
 } as const;
@@ -45,6 +46,8 @@ export type Database = {
           created_at: string;
           starts_at: string | null;
           ends_at: string | null;
+          /** Robot check-in opening time; only meaningful for competitions. */
+          precheck_start: string | null;
           name: string | null;
           type: ActivityTypeEnum;
           max_people: number | null;
@@ -60,6 +63,7 @@ export type Database = {
           created_at?: string;
           starts_at?: string | null;
           ends_at?: string | null;
+          precheck_start?: string | null;
           name?: string | null;
           type?: ActivityTypeEnum | null;
           max_people?: number | null;
@@ -72,6 +76,7 @@ export type Database = {
           created_at?: string;
           starts_at?: string | null;
           ends_at?: string | null;
+          precheck_start?: string | null;
           name?: string | null;
           type?: ActivityTypeEnum | null;
           max_people?: number | null;
