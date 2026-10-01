@@ -1,11 +1,13 @@
 import { useMemo, type CSSProperties } from "react";
 import "./LivePage.css";
-import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum } from "./database.types";
+import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum, MakerProposalTypeEnum } from "./database.types";
 import {
   toTimeLabel,
   type Activity as LiveActivity,
 } from "./OSHWDemActivityRepository";
 import { useActivities } from "./useActivities";
+import { toByline, type Maker } from "./OSHWDemMakerRepository";
+import { useMakers } from "./useMakers";
 
 // PENDING is deliberately absent: not yet announced, so it stays off the grid.
 const VISIBLE_STATUSES: readonly ActivityStatusEnum[] = [
@@ -23,6 +25,8 @@ type Activity = {
   start: string;
   end: string;
   precheckStart?: string;
+  notes?: string;
+  inscriptionLink?: string;
   status?: ActivityStatusEnum;
 };
 
@@ -108,6 +112,36 @@ function toGridActivity(activity: LiveActivity): Activity {
     status: activity.status,
   };
 }
+
+// Call-for-makers proposals that belong on the timetable. Stands are on all day
+// and listed in the Puestos section instead.
+const TIMETABLE_MAKER_TYPES: Partial<Record<MakerProposalTypeEnum, ActivityTypeEnum>> = {
+  TALK: "Charla",
+  WORKSHOP_EVERYONE: "Taller",
+};
+
+// A maker's talk or workshop as a grid activity, once it has been given a slot:
+// a start, an end (or a duration, which toMaker turns into one) and a place.
+function makerToGridActivity(maker: Maker): Activity | null {
+  const type = TIMETABLE_MAKER_TYPES[maker.proposalType];
+  if (!type || !maker.startsAt || !maker.endsAt || !maker.location) return null;
+
+  return {
+    id: `maker-${maker.id}`,
+    title: maker.projectName,
+    author: toByline(maker) ?? undefined,
+    type,
+    location: maker.location,
+    start: toTimeLabel(maker.startsAt),
+    end: toTimeLabel(maker.endsAt),
+    notes: maker.notes ?? undefined,
+    inscriptionLink: maker.inscriptionLink ?? undefined,
+    status: "CONFIRMED",
+  };
+}
+
+// Activities whose title gets the larger .activity-title treatment on the grid.
+const TITLED_TYPES: readonly ActivityTypeEnum[] = ["Competicion", "Exposicion", "Charla", "Taller"];
 
 const MINUTES_PER_ROW = 30;
 // Gaps are teased an hour at a time, not half-hour at a time.
@@ -215,9 +249,8 @@ export default function SchedulePage() {
         </div>        
     </div>
     <ContentMarquee></ContentMarquee>
-    <SponsorsAndCollaborators></SponsorsAndCollaborators>
-    <Inscriptions></Inscriptions>
     <Schedule></Schedule> 
+    <SponsorsAndCollaborators></SponsorsAndCollaborators>
     <Competitions></Competitions>
     <Stands></Stands>
     </div>
@@ -236,26 +269,101 @@ export function ComingSoon() {
     <div id="coming-soon">¡Próximamente!</div> 
   )
 }
-// Nothing confirmed yet, so the exposition is teased rather than listed: a few
-// mystery stands that dissolve down the page.
+// Until makers are published (and while they load), the exposition is teased
+// rather than listed: a few mystery stands that dissolve down the page.
 const MYSTERY_STANDS = 5;
 
+const PROPOSAL_TYPE_LABELS: Record<MakerProposalTypeEnum, string> = {
+  STAND: "Stand",
+  TALK: "Charla",
+  WORKSHOP_EVERYONE: "Taller para todos los públicos",
+};
+
 export function Stands() {
+  const { makers, loading, error } = useMakers();
+
   return (
     <section>
       <div className="heading-row md-v">
         <h2>Puestos, talleres, conferencias y actividades ;) </h2> 
         <Call4MakersSign></Call4MakersSign>
       </div>
-      <div className="stands-container">
-        {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
-          <div className="stand mystery" key={i}>
-            <span className="mystery-label">Stand sin desvelar</span>
-            <div className="mystery-pattern" aria-hidden="true" />
-          </div>
-        ))}z
-      </div>
+      {error ? (
+        <div className="schedule-status schedule-error">
+          ¡No se pudieron cargar los puestos y talleres! Comprueba tu conexión a internet.
+        </div>
+      ) : loading || makers.length === 0 ? (
+        <div className="stands-container teaser">
+          {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
+            <div className="stand mystery" key={i}>
+              <span className="mystery-label">Stand sin desvelar</span>
+              <div className="mystery-pattern" aria-hidden="true" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="stands-container">
+          {makers.map(maker => <MakerCard key={maker.id} maker={maker} />)}
+        </div>
+      )}
     </section>
+  );
+}
+
+function MakerCard({ maker }: { maker: Maker }) {
+  const byline = toByline(maker);
+  const time = maker.startsAt && maker.endsAt
+    ? `${toTimeLabel(maker.startsAt)} - ${toTimeLabel(maker.endsAt)}`
+    : maker.startsAt
+      ? toTimeLabel(maker.startsAt)
+      : null;
+
+  return (
+    <article className={`stand maker-${maker.proposalType.toLowerCase()}`}>
+      <div className="maker-header">
+        {maker.logo ? (
+          <img
+            className="maker-logo"
+            src={maker.logo}
+            alt=""
+            loading="lazy"
+            // A dead link (e.g. an expired form upload) shouldn't leave a broken image.
+            onError={event => { event.currentTarget.hidden = true; }}
+          />
+        ) : null}
+        <div>
+          <span className="maker-type">{PROPOSAL_TYPE_LABELS[maker.proposalType] ?? maker.proposalType}</span>
+          <h3 className="maker-name">{maker.projectName}</h3>
+          {byline ? <p className="stand-exhibitors">{byline}</p> : null}
+        </div>
+      </div>
+      <ul className="maker-details">
+        {maker.location ? <li>📍 {maker.location}</li> : null}
+        {time ? <li className="stand-time">🕑 {time}</li> : null}
+        {maker.durationMinutes ? <li>⏱️ {maker.durationMinutes} min</li> : null}
+      </ul>
+      {maker.notes ? <p className="maker-notes"><span className="activity-notes">{maker.notes}</span></p> : null}
+      {maker.tags.length > 0 ? (
+        <ul className="maker-tags" aria-label="Temas">
+          {maker.tags.map(tag => <li key={tag}>{tag}</li>)}
+        </ul>
+      ) : null}
+      {maker.description ? <p className="maker-description">{maker.description}</p> : null}
+      {maker.link || maker.inscriptionLink ? (
+        <div className="maker-links">
+          {maker.inscriptionLink ? (
+            <a className="maker-link" href={maker.inscriptionLink} target="_blank" rel="noopener noreferrer">
+              Inscripción
+            </a>
+          ) : null}
+          {maker.link ? (
+            <a className="maker-link" href={maker.link} target="_blank" rel="noopener noreferrer">
+              Más información
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+    </article>
   );
 }
 export function TalksAndWorkshops() {
@@ -281,11 +389,17 @@ export function Schedule() {
   const { activities: liveActivities, loading, error } = useActivities({
     statuses: VISIBLE_STATUSES,
   });
+  // Makers only add to the board, so if they fail to load the timetable still
+  // shows everything else rather than an error.
+  const { makers, loading: makersLoading } = useMakers();
 
   // Rows without a start/end can't be placed on the grid.
-  const activities = liveActivities
-    .filter(act => act.startsAt && act.endsAt)
-    .map(toGridActivity);
+  const activities = [
+    ...liveActivities
+      .filter(act => act.startsAt && act.endsAt)
+      .map(toGridActivity),
+    ...makers.flatMap(maker => makerToGridActivity(maker) ?? []),
+  ];
 
   const originMinutes = activities.length
     ? Math.floor(
@@ -295,7 +409,7 @@ export function Schedule() {
 
   const mysteryActivities = findMysteryActivities(activities, originMinutes);
 
-  if (loading) return <div className="schedule-status">Cargando programa…</div>;
+  if (loading || makersLoading) return <div className="schedule-status">Cargando programa…</div>;
   if (error) {
     return (
       <div className="schedule-status schedule-error">
@@ -370,20 +484,25 @@ export function Schedule() {
                   <div className="status-marker cancelled-marker">Cancelada</div>
                 :<></>}
                 <div className={act.type+"-badge"}></div>
+                {/* One line each; the time sits right under the title so it's
+                    the second thing you read. */}
                 <div className="activity-text">
-                    <strong className={act.type == "Competicion" || act.type == "Exposicion" ? "activity-title" : undefined}>{act.title}</strong><br/>
-                    {act.author?
-                    <>
-                        <span className="activity-author">{act.author}</span><br/>
-                    </>:<></>}
+                    <strong className={TITLED_TYPES.includes(act.type) ? "activity-title" : undefined}>{act.title}</strong>
                     {act.type != "Otro"?
-                    <><span className="activity-timeframe">{act.start+" - "+act.end}</span>
-                    </>:<></>
-                    }
+                    <span className="activity-timeframe">{act.start+" - "+act.end}</span>
+                    :<></>}
+                    {act.author?
+                    <span className="activity-author">{act.author}</span>
+                    :<></>}
                     {act.type == "Competicion" && act.precheckStart?
-                    <><br/><span className="activity-precheck">{"Verificación: "+act.precheckStart}</span>
-                    </>:<></>
-                    }
+                    <span className="activity-precheck">{"Verificación: "+act.precheckStart}</span>
+                    :<></>}
+                    {act.notes?
+                    <span className="activity-notes">{act.notes}</span>
+                    :<></>}
+                    {act.inscriptionLink?
+                    <a className="activity-inscription" href={act.inscriptionLink} target="_blank" rel="noopener noreferrer">Inscripción</a>
+                    :<></>}
                 </div>
               </div>
             );
@@ -435,6 +554,8 @@ type Supporter = {
   monochrome: boolean;
 };
 
+// The source of truth for 2026's sponsors and collaborators. Deliberately not
+// read from OSHWDemCollaboratorRepository (oshwdem_collaborator) this edition.
 const sponsors: Supporter[] = [
   {name: "Arduino", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/arduino-cropped-medium.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9hcmR1aW5vLWNyb3BwZWQtbWVkaXVtLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3OTAwODc1NTYsImV4cCI6MTc5ODcyNzU1Nn0.XHtOe8F-5SctIa9FlfPJ03e6uvMyPH7In_1cUMLoNhk", link: "https://arduino.cc", tier: 0, monochrome: false},
   {name: "BricoGeek", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/bricogeek.jpg?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9icmljb2dlZWsuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTg1Nzg3MCwiZXhwIjoxNzk4NDk3ODcwfQ.CNfuwgUVQoGRTs1CyNpPaqRqNyHB_iC0oiUSg1GewsY", link: "https://tienda.bricogeek.com", tier: 1, monochrome: false},
@@ -504,7 +625,7 @@ export function SponsorsAndCollaborators() {
 export function Call4MakersSign(){
   
   var call4MakersStatuses = ["SOON", "OPEN", "CLOSED", ]
-  var call4MakersStatus = call4MakersStatuses[1]
+  var call4MakersStatus = call4MakersStatuses[2]
   return <><div className="call-button">
           {call4MakersStatus == "SOON"? <div className="c4m-soon">🛠️ CALL 4 MAKERS: ¡PRÓXIMAMENTE!</div>: <></>}
           {call4MakersStatus == "OPEN"? <><div className="pulsating-text-lcd c4m-open">🛠️ CALL 4 MAKERS: ¡ABIERTO!</div><a href="https://opnform.com/forms/call4makers-oshwdem-2026-gpapqw" className="call-inscription">¡Envíanos tu propuesta aquí!</a></>: <></>}

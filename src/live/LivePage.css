@@ -218,8 +218,10 @@ section {
     flex-direction: column;
     flex-wrap: wrap;
     gap:1rem;
-    /* The list dissolves rather than stopping on a hard edge, so it reads as
-       "there's more still to come". */
+}
+/* The placeholder list dissolves rather than stopping on a hard edge, so it
+   reads as "there's more still to come". Real makers are never faded out. */
+.stands-container.teaser {
     -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 }
@@ -479,6 +481,90 @@ section {
     margin:0;
 }
 
+/* Call-for-makers cards: stands and workshops. */
+.stand.maker-workshop_everyone {
+    background-color: #0d47a1;
+}
+.stand.maker-talk {
+    background-color: #00aeff;
+    color: var(--color-background);
+}
+.maker-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+/* Logos come in all shapes, so the tile keeps one height and takes the
+   logo's own width, up to a limit. */
+.maker-logo {
+    height: 5rem;
+    width: auto;
+    max-width: 12rem;
+    object-fit: contain;
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+.maker-type {
+    display: inline-block;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    padding: 2px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+.maker-name {
+    margin: 0.4rem 0 0.2rem;
+}
+.maker-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+.maker-notes {
+    margin: 0 0 1rem;
+}
+.maker-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+}
+.maker-tags > li {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--color-background);
+    padding: 2px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+}
+/* Form answers keep their own paragraphs. */
+.maker-description {
+    white-space: pre-line;
+    margin: 0;
+}
+.maker-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 1rem;
+}
+.maker-link {
+    display: inline-block;
+    background-color: black;
+    color: white;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    text-transform: uppercase;
+}
+
 /* Hour-long holes in the Laboratorio column: nothing announced there yet, so
    instead of sitting empty the slot shows a mystery activity. */
 .activity.mystery {
@@ -666,7 +752,9 @@ section {
     }
 }
 
-.activity-precheck {
+/* Notes share the Verificación look: a short practical line people shouldn't miss. */
+.activity-precheck,
+.activity-notes {
     background-color: var(--color-background);
     color: var(--color-foreground);
     padding: 2px 10px;
@@ -674,5 +762,112 @@ section {
 }
 
 .activity-title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+}
+
+/* Sign-up link on a timetable talk or workshop: the same black button as the
+   Puestos cards, sized for a cell. */
+.activity-inscription {
+    background-color: black;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+/* Notes are things to act on before coming, so they pulse to get noticed. */
+.activity-notes {
+    animation: notes-ping 1.6s ease-out infinite;
+}
+/* A yellow ring that ripples out of the pill and fades, like a notification
+   ping: it catches the eye while the text itself stays still and readable. */
+@keyframes notes-ping {
+    from { box-shadow: 0 0 0 0 rgba(250, 190, 11, 0.9); }
+    to { box-shadow: 0 0 0 8px rgba(250, 190, 11, 0); }
+}
+
+/* Each piece of a timetable cell on its own line, sized to its content so the
+   pills and the time chip don't stretch across the cell. Logical sizes, so it
+   also holds in the vertical exposition strip on phones. */
+.activity-text > * {
+    display: block;
+    inline-size: fit-content;
+}
+.activity-text > * + * {
+    margin-block-start: 3px;
+}
+/* The time is what people scan a timetable for, so it gets its own outlined
+   chip in the cell's text colour — readable on every cell colour, and distinct
+   from the filled Verificación/notes pills. */
+.activity-timeframe {
+    border: 1.5px solid currentColor;
+    border-radius: 8px;
+    /* Logical, so the chip keeps its proportions when the text runs vertically. */
+    padding-block: 0;
+    padding-inline: 6px;
+    font-variant-numeric: tabular-nums;
+    font-weight: bold;
+}
+@media (prefers-reduced-motion: reduce) {
+    .activity-notes { animation: none; }
+}
+/* Phones: three rooms don't fit side by side at desktop proportions. The
+   exposition runs all day and only needs its name, so its column shrinks to a
+   strip with vertical text, leaving the width to talks, workshops and
+   competitions. Titles drop back to body size so cells stay readable. */
+@media screen and (max-width: 640px) {
+    .schedule {
+        /* minmax(0, …) lets a column shrink below its longest word instead of
+           pushing the grid off the side of the screen. */
+        grid-template-columns: 2.75rem minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .activity {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+    .activity-title {
+        font-size: 1rem;
+    }
+    /* A pill wraps as one piece rather than breaking mid-label. */
+    .activity-precheck,
+    .activity-notes {
+        display: inline-block;
+        font-size: 0.8rem;
+        padding: 2px 8px;
+    }
+    /* Read top to bottom, from the edge of the screen. */
+    .schedule-header:first-child,
+    .activity.exposicion .activity-text {
+        writing-mode: vertical-rl;
+    }
+    /* The header row is only as tall as the other two headers, so this one is
+       set smaller to fit "maker@domus (3ª planta)" in that height. */
+    .schedule-header:first-child {
+        font-size: 0.65rem !important;
+    }
+    .activity.exposicion {
+        justify-content: center;
+        align-items: center;
+    }
+    /* The strip only has room for one line of vertical text, so the title and
+       its time run on together instead of stacking side by side. */
+    .activity.exposicion .activity-text {
+        white-space: nowrap;
+    }
+    .activity.exposicion .activity-text > * {
+        display: inline-block;
+        margin-block-start: 0;
+    }
+    .activity.exposicion .activity-text > * + * {
+        margin-inline-start: 0.5em;
+    }
+    /* Narrow cells cut a centred medal through the middle; sitting it on the
+       bottom edge keeps it whole and clear of the title at the top. */
+    .medal-pattern::before {
+        /* Fades in from the top, towards the medal at the bottom. */
+        background: linear-gradient(to bottom, transparent 15%, var(--color-background) 90%);
+        -webkit-mask-position: right -30px bottom;
+        mask-position: right -30px bottom;
+    }
 }
