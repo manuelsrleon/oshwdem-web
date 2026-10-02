@@ -850,8 +850,10 @@ video.card-background {
 
 .supporter-card {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     place-items: center;
     box-sizing: border-box;
+    min-width: 0;
     min-height: clamp(3rem, 10vw, 10rem);
     padding: clamp(0.75rem, 2vw, 1.1rem);
     background-color: #fff;
@@ -861,7 +863,7 @@ video.card-background {
 
 .supporter-logo {
     display: block;
-    max-width: 110%;
+    max-width: 100%;
     max-height: 6.75rem;
     object-fit: contain;
 }
@@ -875,7 +877,7 @@ video.card-background {
 
 .supporter-card.tier-0 .supporter-logo {
     max-height: clamp(6.5rem, 20vw, 12rem);
-    max-width: min(110%, 34rem);
+    max-width: min(100%, 34rem);
 }
 
 .supporter-card.tier-2 {
@@ -918,6 +920,10 @@ video.card-background {
 }
 
 @media screen and (max-width: 640px) {
+    .supporter-card,
+    .supporter-card.tier-0 {
+        padding: 1.25rem 1.5rem;
+    }
     .supporter-card.supporter-bricogeek .supporter-logo {
         max-width: 90%;
     }
@@ -1093,6 +1099,10 @@ video.card-background {
     .activity.exposicion .activity-text > .activity-cta {
         display: none;
     }
+    .activity.exposicion .card-background,
+    .activity.exposicion.has-background .activity-text::before {
+        display: none;
+    }
     .activity-text > .activity-inscription {
         font-size: 0.85rem;
         padding: 6px 12px;
@@ -1241,11 +1251,10 @@ video.card-background {
     }
     .maker-logo {
         order: 0;
-        align-self: flex-end;
         margin-inline-start: 0;
         max-width: 100%;
-        height: 6rem;
-        padding: 0.9rem 1.1rem;
+        height: 5rem;
+        padding: 0.75rem 0.95rem;
     }
     .maker-name {
         overflow-wrap: anywhere;
