@@ -1,11 +1,15 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import "./LivePage.css";
-import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum } from "./database.types";
+import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum, MakerLevelEnum, MakerProposalTypeEnum } from "./database.types";
 import {
   toTimeLabel,
   type Activity as LiveActivity,
 } from "./OSHWDemActivityRepository";
 import { useActivities } from "./useActivities";
+import { toByline, type Maker } from "./OSHWDemMakerRepository";
+import { useMakers } from "./useMakers";
+import { EVENT_END, useEventInfo } from "./useEventInfo";
+import { backgroundFor, type Background } from "./backgrounds";
 
 // PENDING is deliberately absent: not yet announced, so it stays off the grid.
 const VISIBLE_STATUSES: readonly ActivityStatusEnum[] = [
@@ -22,7 +26,12 @@ type Activity = {
   location: ActivityLocationEnum | "General";
   start: string;
   end: string;
+  precheckStart?: string;
+  notes?: string;
+  inscriptionLink?: string;
   status?: ActivityStatusEnum;
+  background?: Background;
+  href?: string;
 };
 
 type Stand = {
@@ -88,7 +97,6 @@ export const stands_old: Stand[] = [
 const locations = ["maker@domus (3ª planta)", "Laboratorio (2ª planta)", "Competiciones (Auditorio, planta 0)"];
 
 const livestreamingURL = "streaming.eis.gal";
-const livestreamingAvailable = false; 
 
 // oshwdem_activity.type -> the CSS/layout categories the grid understands.
 
@@ -103,9 +111,43 @@ function toGridActivity(activity: LiveActivity): Activity {
     location: activity.location ?? "General",
     start: toTimeLabel(activity.startsAt),
     end: toTimeLabel(activity.endsAt),
+    precheckStart: toTimeLabel(activity.precheckStart) || undefined,
     status: activity.status,
+    background: backgroundFor(String(activity.id)),
   };
 }
+
+// Call-for-makers proposals that belong on the timetable. Stands are on all day
+// and listed in the Puestos section instead.
+const TIMETABLE_MAKER_TYPES: Partial<Record<MakerProposalTypeEnum, ActivityTypeEnum>> = {
+  TALK: "Charla",
+  WORKSHOP_EVERYONE: "Taller",
+};
+
+// A maker's talk or workshop as a grid activity, once it has been given a slot:
+// a start, an end (or a duration, which toMaker turns into one) and a place.
+function makerToGridActivity(maker: Maker): Activity | null {
+  const type = TIMETABLE_MAKER_TYPES[maker.proposalType];
+  if (!type || !maker.startsAt || !maker.endsAt || !maker.location) return null;
+
+  return {
+    id: `maker-${maker.id}`,
+    title: maker.projectName,
+    author: toByline(maker) ?? undefined,
+    type,
+    location: maker.location,
+    start: toTimeLabel(maker.startsAt),
+    end: toTimeLabel(maker.endsAt),
+    notes: maker.notes ?? undefined,
+    inscriptionLink: maker.inscriptionLink ?? undefined,
+    status: "CONFIRMED",
+    background: backgroundFor(maker.background, maker.submissionId),
+    href: `#${makerAnchor(maker)}`,
+  };
+}
+
+// Activities whose title gets the larger .activity-title treatment on the grid.
+const TITLED_TYPES: readonly ActivityTypeEnum[] = ["Competicion", "Exposicion", "Charla", "Taller"];
 
 const MINUTES_PER_ROW = 30;
 // Gaps are teased an hour at a time, not half-hour at a time.
@@ -115,6 +157,21 @@ const MYSTERY_MINUTES = 60;
 const MYSTERY_COLUMN = 2;
 // Line 1 is the location header, so the earliest activity starts on line 2.
 const FIRST_ACTIVITY_LINE = 2;
+
+// Medal artwork lives in public/medallas, one SVG per competition.
+function medalStyle(slug: string): CSSProperties {
+  return { "--competition-medal": `url(/medallas/${slug}.svg)` } as CSSProperties;
+}
+
+// Timetable rows only have a name, so the medal is found by slugging it the way
+// the files are named: "Mini-Sumo" -> "minisumo", "Siguelíneas" -> "siguelineas".
+function toMedalSlug(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
 
 function toMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -160,7 +217,7 @@ function findMysteryActivities(
 ): MysteryActivity[] {
   if (activities.length === 0) return [];
 
-  const lastMinute = Math.max(...activities.map(act => toMinutes(act.end)));
+  const lastMinute = Math.max(...activities.map(act => toMinutes(act.end || act.start)));
   const mysteries: MysteryActivity[] = [];
 
   for (let start = originMinutes; start < lastMinute; start += MYSTERY_MINUTES) {
@@ -171,7 +228,7 @@ function findMysteryActivities(
     const busy = activities.some(act => {
       const actColumn = columnOf(act.location);
       if (actColumn !== null && actColumn !== MYSTERY_COLUMN) return false;
-      return toMinutes(act.start) < end && toMinutes(act.end) > start;
+      return toMinutes(act.start) < end && toMinutes(act.end || act.start) > start;
     });
     if (busy) continue;
 
@@ -190,28 +247,117 @@ export default function SchedulePage() {
   return (
     
     <div id="schedule-page-container"> 
-    <div className="live-header">
-        <img src="/logo-oshwdem-2026.svg" className="schedule-oshwdem-logo" alt="" />
+    <header className="live-header">
+        <div className="live-header-brand">
+          <img src="/logo-oshwdem-2026.svg" className="schedule-oshwdem-logo" alt="OSHWDem 2026" />
+        </div>
+        <div className="live-header-event">
+          <Countdown></Countdown>
+          <p className="event-date">Sábado, 3 de octubre de 2026</p>
+        </div>
         <div id="livestreaming-container">
-          <h3>Enlace a la retransmisión en directo:</h3>  
-          {livestreamingURL && livestreamingAvailable?<LivestreamingBanner></LivestreamingBanner> :<ComingSoon></ComingSoon>}
-        </div>        
-    </div>
+          <LivestreamingBanner></LivestreamingBanner>
+        </div>
+        <ScrollHint></ScrollHint>
+    </header>
     <ContentMarquee></ContentMarquee>
-    <SponsorsAndCollaborators></SponsorsAndCollaborators>
-    <Inscriptions></Inscriptions>
     <Schedule></Schedule> 
+    <SponsorsAndCollaborators></SponsorsAndCollaborators>
     <Competitions></Competitions>
     <Stands></Stands>
+    <BackToTop></BackToTop>
     </div>
     
   )
 }
+
+function Countdown() {
+  const { start, now, hasStarted, hasEnded } = useEventInfo({ tickMs: 1000 });
+
+  if (hasEnded) {
+    return <p className="countdown-message">¡Gracias por venir! Nos vemos en la próxima edición</p>;
+  }
+  if (hasStarted) {
+    return <p className="countdown-message countdown-live">¡Estamos en marcha!</p>;
+  }
+
+  const totalSeconds = Math.floor((start.getTime() - now) / 1000);
+  const units = [
+    { label: "días", value: Math.floor(totalSeconds / 86400) },
+    { label: "horas", value: Math.floor(totalSeconds / 3600) % 24 },
+    { label: "min", value: Math.floor(totalSeconds / 60) % 60 },
+    { label: "seg", value: totalSeconds % 60 },
+  ];
+
+  return (
+    <div className="countdown" role="timer" aria-label="Cuenta atrás para OSHWDem 2026">
+      {units.map(unit => (
+        <div className="countdown-unit" key={unit.label}>
+          <span className="countdown-value">{String(unit.value).padStart(2, "0")}</span>
+          <span className="countdown-label">{unit.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ScrollHint() {
+  const scrollPastHeader = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    event.currentTarget.closest("header")?.nextElementSibling?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  };
+
+  return (
+    <button type="button" className="scroll-hint" onClick={scrollPastHeader}>
+      Ver más
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
+const BACK_TO_TOP_THRESHOLD = 600;
+
+function BackToTop() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > BACK_TO_TOP_THRESHOLD);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  };
+
+  return (
+    <button
+      type="button"
+      className={`back-to-top${visible ? " visible" : ""}`}
+      onClick={scrollToTop}
+      tabIndex={visible ? 0 : -1}
+    >
+      <svg className="back-to-top-arrow" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      Volver arriba
+    </button>
+  );
+}
 export function LivestreamingBanner() {
   return ( 
-    <div id="livestreaming-banner">
-     <p> Proporcionado por la EIS</p>
-    </div>
+    <a id="livestreaming-banner" href={`https://${livestreamingURL}`} target="_blank" rel="noopener noreferrer">
+      <img className="livestreaming-logo" src="/sponsor-logos/Logo2Negro_EIS.png" alt="Escola de Imaxe e Son" />
+      <span className="livestreaming-text">
+        <span className="livestreaming-cta">Ver en directo</span>
+        <span className="livestreaming-url">{livestreamingURL}</span>
+        <span className="livestreaming-credit">Retransmisión de la EIS</span>
+      </span>
+    </a>
   )
 }
 export function ComingSoon() {
@@ -219,26 +365,252 @@ export function ComingSoon() {
     <div id="coming-soon">¡Próximamente!</div> 
   )
 }
-// Nothing confirmed yet, so the exposition is teased rather than listed: a few
-// mystery stands that dissolve down the page.
+// Until makers are published (and while they load), the exposition is teased
+// rather than listed: a few mystery stands that dissolve down the page.
 const MYSTERY_STANDS = 5;
 
+const PROPOSAL_TYPE_LABELS: Record<MakerProposalTypeEnum, string> = {
+  STAND: "Stand",
+  TALK: "Charla",
+  WORKSHOP_EVERYONE: "Taller",
+};
+
+const LEVEL_LABELS: Record<MakerLevelEnum, string> = {
+  EVERYONE: "Para todos los públicos",
+  BEGINNER: "Para usuarios principiantes",
+  ADVANCED: "Usuarios avanzados",
+};
+
+const PROPOSAL_TYPE_FILTERS: { type: MakerProposalTypeEnum; label: string }[] = [
+  { type: "STAND", label: "Stands" },
+  { type: "TALK", label: "Charlas" },
+  { type: "WORKSHOP_EVERYONE", label: "Talleres" },
+];
+
+function normalizeForSearch(text: string): string {
+  return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+}
+
+function makerMatches(maker: Maker, query: string): boolean {
+  const haystack = [
+    maker.projectName,
+    maker.description,
+    maker.participants,
+    maker.organization,
+    ...maker.tags,
+  ].filter(Boolean).join(" ");
+  const normalized = normalizeForSearch(haystack);
+  return normalizeForSearch(query).split(/\s+/).filter(Boolean).every(term => normalized.includes(term));
+}
+
 export function Stands() {
+  const { makers, loading, error } = useMakers();
+  const [filter, setFilter] = useState<MakerProposalTypeEnum | null>(null);
+  const [query, setQuery] = useState("");
+  const searchedMakers = useMemo(
+    () => query.trim() ? makers.filter(maker => makerMatches(maker, query)) : makers,
+    [makers, query],
+  );
+  const visibleMakers = filter ? searchedMakers.filter(maker => maker.proposalType === filter) : searchedMakers;
+
+  useEffect(() => {
+    if (loading || !window.location.hash) return;
+    document.getElementById(decodeURIComponent(window.location.hash.slice(1)))?.scrollIntoView();
+  }, [loading]);
+
   return (
     <section>
       <div className="heading-row md-v">
         <h2>Puestos, talleres, conferencias y actividades ;) </h2> 
         <Call4MakersSign></Call4MakersSign>
       </div>
-      <div className="stands-container">
-        {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
-          <div className="stand mystery" key={i}>
-            <span className="mystery-label">Stand sin desvelar</span>
-            <div className="mystery-pattern" aria-hidden="true" />
+      {error ? (
+        <div className="schedule-status schedule-error">
+          ¡No se pudieron cargar los puestos y talleres! Comprueba tu conexión a internet.
+        </div>
+      ) : loading || makers.length === 0 ? (
+        <div className="stands-container teaser">
+          {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
+            <div className="stand mystery" key={i}>
+              <span className="mystery-label">Stand sin desvelar</span>
+              <div className="mystery-pattern" aria-hidden="true" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="maker-toolbar">
+            <div className="maker-search">
+              <svg className="maker-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+              </svg>
+              <input
+                type="search"
+                className="maker-search-input"
+                placeholder="Buscar puestos, charlas, talleres…"
+                aria-label="Buscar puestos, charlas y talleres"
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+              />
+            </div>
+            <div className="maker-filters" role="group" aria-label="Filtrar por tipo">
+              <button
+                type="button"
+                className="maker-filter"
+                aria-pressed={filter === null}
+                onClick={() => setFilter(null)}
+              >
+                Todo <span className="maker-filter-count">{searchedMakers.length}</span>
+              </button>
+              {PROPOSAL_TYPE_FILTERS.map(({ type, label }) => {
+                const count = searchedMakers.filter(maker => maker.proposalType === type).length;
+                if (count === 0 && filter !== type) return null;
+                return (
+                  <button
+                    type="button"
+                    key={type}
+                    className={`maker-filter maker-filter-${type.toLowerCase()}`}
+                    aria-pressed={filter === type}
+                    onClick={() => setFilter(filter === type ? null : type)}
+                  >
+                    {label} <span className="maker-filter-count">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        ))}z
-      </div>
+          {visibleMakers.length === 0 ? (
+            <p className="maker-search-empty">No hay nada que coincida con «{query.trim()}».</p>
+          ) : (
+            <div className="stands-container">
+              {visibleMakers.map(maker => <MakerCard key={maker.id} maker={maker} />)}
+            </div>
+          )}
+        </>
+      )}
     </section>
+  );
+}
+
+function makerAnchor(maker: Maker): string {
+  return `maker-${maker.submissionId ?? maker.id}`;
+}
+
+function competitionAnchor(slug: string): string {
+  return `competition-${slug}`;
+}
+
+function withBold(text: string) {
+  return text.split(/\*\*(.+?)\*\*/g).map((part, index) =>
+    index % 2 === 1 ? <strong key={index}>{part}</strong> : part,
+  );
+}
+
+function InscriptionButton({ url }: { url: string }) {
+  const open = (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+  return (
+    <span
+      className="activity-inscription"
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={event => {
+        if (event.key === "Enter" || event.key === " ") open(event);
+      }}
+    >
+      Inscribirse
+    </span>
+  );
+}
+
+function CardBackground({ background }: { background: Background }) {
+  if (background.video) {
+    return (
+      <video
+        className="card-background"
+        src={background.url}
+        autoPlay
+        muted
+        loop
+        playsInline
+        aria-hidden="true"
+        ref={video => {
+          if (!video) return;
+          video.muted = true;
+          video.play().catch(() => {});
+        }}
+      />
+    );
+  }
+  return <div className="card-background" style={{ backgroundImage: `url("${background.url}")` }} aria-hidden="true" />;
+}
+
+function MakerCard({ maker }: { maker: Maker }) {
+  const byline = toByline(maker);
+  const background = backgroundFor(maker.background, maker.submissionId);
+  const time = maker.startsAt && maker.endsAt
+    ? `${toTimeLabel(maker.startsAt)} - ${toTimeLabel(maker.endsAt)}`
+    : maker.startsAt
+      ? toTimeLabel(maker.startsAt)
+      : null;
+
+  return (
+    <article id={makerAnchor(maker)} className={`stand maker-${maker.proposalType.toLowerCase()} ${background ? "has-background" : ""}`}>
+      {background ? <CardBackground background={background} /> : null}
+      <div className="maker-header">
+        {maker.logo ? (
+          <img
+            className="maker-logo"
+            src={maker.logo}
+            alt=""
+            loading="lazy"
+            // A dead link (e.g. an expired form upload) shouldn't leave a broken image.
+            onError={event => { event.currentTarget.hidden = true; }}
+          />
+        ) : null}
+        <div>
+          <div className="maker-pills">
+            <span className="maker-type">{PROPOSAL_TYPE_LABELS[maker.proposalType] ?? maker.proposalType}</span>
+            {maker.level ? <span className={`maker-level maker-level-${maker.level.toLowerCase()}`}>{LEVEL_LABELS[maker.level]}</span> : null}
+          </div>
+          <h3 className="maker-name">{maker.projectName}</h3>
+          {byline ? <p className="stand-exhibitors">{byline}</p> : null}
+        </div>
+      </div>
+      {maker.location || time || maker.durationMinutes ? (
+        <ul className="maker-details">
+          {maker.location ? <li>📍 {maker.location}</li> : null}
+          {time ? <li className="stand-time">🕑 {time}</li> : null}
+          {maker.durationMinutes ? <li>⏱️ {maker.durationMinutes} min</li> : null}
+        </ul>
+      ) : null}
+      {maker.notes ? <p className="maker-notes"><span className="activity-notes">{maker.notes}</span></p> : null}
+      {maker.tags.length > 0 ? (
+        <ul className="maker-tags" aria-label="Temas">
+          {maker.tags.map(tag => <li key={tag}>{tag}</li>)}
+        </ul>
+      ) : null}
+      {maker.description ? <p className="maker-description">{withBold(maker.description)}</p> : null}
+      {maker.link || maker.inscriptionLink ? (
+        <div className="maker-links">
+          {maker.inscriptionLink ? (
+            <a className="maker-link" href={maker.inscriptionLink} target="_blank" rel="noopener noreferrer">
+              Inscribirse
+            </a>
+          ) : null}
+          {maker.link ? (
+            <a className="maker-link" href={maker.link} target="_blank" rel="noopener noreferrer">
+              Más información
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+    </article>
   );
 }
 export function TalksAndWorkshops() {
@@ -260,15 +632,38 @@ export function TalksAndWorkshops() {
   </section>
 }
 
+function isClosing(act: Activity): boolean {
+  return act.type == "Otro" && act.location == "General" && act.start == toTimeLabel(EVENT_END);
+}
+
+const FAMILY_PHOTO: Activity = {
+  id: "foto-familia",
+  title: "Foto familia (Makers, competidores, voluntarios y organizadores)",
+  type: "Otro",
+  location: "General",
+  start: "19:10",
+  end: "",
+  status: "CONFIRMED",
+};
+
 export function Schedule() {
   const { activities: liveActivities, loading, error } = useActivities({
     statuses: VISIBLE_STATUSES,
   });
+  // Makers only add to the board, so if they fail to load the timetable still
+  // shows everything else rather than an error.
+  const { makers, loading: makersLoading } = useMakers();
+  const { inscriptionsClosed } = useEventInfo();
 
   // Rows without a start/end can't be placed on the grid.
-  const activities = liveActivities
-    .filter(act => act.startsAt && act.endsAt)
-    .map(toGridActivity);
+  const activities = [
+    ...liveActivities
+      .filter(act => act.startsAt && act.endsAt)
+      .map(toGridActivity),
+    ...makers.flatMap(maker => makerToGridActivity(maker) ?? []),
+    FAMILY_PHOTO,
+  ];
+  const generalRowsTaken = new Set<number>();
 
   const originMinutes = activities.length
     ? Math.floor(
@@ -276,9 +671,19 @@ export function Schedule() {
       ) * MINUTES_PER_ROW
     : 0;
 
-  const mysteryActivities = findMysteryActivities(activities, originMinutes);
+  const mysteryActivities = inscriptionsClosed ? [] : findMysteryActivities(activities, originMinutes);
 
-  if (loading) return <div className="schedule-status">Cargando programa…</div>;
+  if (loading || makersLoading) {
+    return (
+      <section>
+        <h2>🕑 Programa del evento</h2>
+        <div className="schedule-loading" role="status">
+          <span className="spinner" aria-hidden="true" />
+          <span>Cargando programa…</span>
+        </div>
+      </section>
+    );
+  }
   if (error) {
     return (
       <div className="schedule-status schedule-error">
@@ -316,23 +721,34 @@ export function Schedule() {
 
           {/* Activities */}
           {activities.map(act => {
-            const startRow = timeToRow(act.start, originMinutes);
+            let startRow = timeToRow(act.start, originMinutes);
             // Never let an activity collapse to zero rows: one shorter than a row
             // (or with end == start) still needs to occupy a cell.
-            const endRow = Math.max(timeToRow(act.end, originMinutes), startRow + 1);
+            let endRow = Math.max(timeToRow(act.end || act.start, originMinutes), startRow + 1);
+            if (act.location === "General") {
+              while (generalRowsTaken.has(startRow)) {
+                startRow++;
+                endRow++;
+              }
+              generalRowsTaken.add(startRow);
+            }
 
             // General has no column of its own, so it spans all three.
             const col = columnOf(act.location) ?? "1 / span 3";
+            const isCompetition = act.type == "Competicion";
+            const href = act.href ?? (isCompetition ? `#${competitionAnchor(toMedalSlug(act.title))}` : undefined);
+            const cellProps = {
+              className: `activity ${act.type.toLowerCase()} ${act.status ? `status-${act.status.toLowerCase()}` : ""} ${isCompetition ? "medal-pattern" : ""} ${act.background ? "has-background" : ""} ${href ? "activity-link" : ""}`,
+              style: {
+                ...(isCompetition ? medalStyle(toMedalSlug(act.title)) : {}),
+                gridColumn: col,
+                gridRow: `${startRow} / ${endRow}`
+              },
+            };
 
-            return (
-              <div
-                key={act.id}
-                className={`activity ${act.type.toLowerCase()} ${act.status ? `status-${act.status.toLowerCase()}` : ""}`}
-                style={{
-                  gridColumn: col,
-                  gridRow: `${startRow} / ${endRow}`
-                }}
-              >
+            const content = (
+              <>
+                {act.background ? <CardBackground background={act.background} /> : null}
                 {act.type == "Taller"?
                 <>
                   <div className="taller-marker">
@@ -351,19 +767,30 @@ export function Schedule() {
                   <div className="status-marker cancelled-marker">Cancelada</div>
                 :<></>}
                 <div className={act.type+"-badge"}></div>
+                {/* One line each; the time sits right under the title so it's
+                    the second thing you read. */}
                 <div className="activity-text">
-                    <strong>{act.title}</strong><br/>
+                    <strong className={TITLED_TYPES.includes(act.type) ? "activity-title" : undefined}>{act.title}</strong>
+                    <span className="activity-timeframe">{act.end && !isClosing(act) ? act.start+" - "+act.end : act.start}</span>
                     {act.author?
-                    <>
-                        <span className="activity-author">{act.author}</span><br/>
-                    </>:<></>}
-                    {act.type != "Otro"?
-                    <><span className="activity-timeframe">{act.start+" - "+act.end}</span>
-                    </>:<></>
-                    }
+                    <span className="activity-author">{act.author}</span>
+                    :<></>}
+                    {act.type == "Competicion" && act.precheckStart?
+                    <span className="activity-precheck">{"Verificación: "+act.precheckStart}</span>
+                    :<></>}
+                    {act.notes?
+                    <span className="activity-notes">{act.notes}</span>
+                    :<></>}
+                    {act.inscriptionLink?
+                    <InscriptionButton url={act.inscriptionLink} />
+                    :<></>}
                 </div>
-              </div>
+              </>
             );
+
+            return href
+              ? <a key={act.id} href={href} {...cellProps}>{content}</a>
+              : <div key={act.id} {...cellProps}>{content}</div>;
           })}
         </div>
       </div>
@@ -383,16 +810,22 @@ export function Schedule() {
   }
   
   export function Competitions(){
+    const { inscriptionsClosed } = useEventInfo();
     return <section>
     <h2>Competiciones</h2>
     <div className="competition-container">
         {
         competitions.map( (competition, index) => 
-          <div className="competition">
+          <div
+            key={competition.id}
+            id={competitionAnchor(competition.id)}
+            className="competition medal-pattern"
+            style={medalStyle(competition.id)}
+          >
         <h3>{String(index+1).padStart(2,"0")} {competition.title}</h3>
         <div className="competition-links">
           <a href={competition.rule_link} className="competition-link">Reglas</a>
-          <a href={competition.inscription_link} className="competition-link">Inscripción</a>
+          {inscriptionsClosed ? null : <a href={competition.inscription_link} className="competition-link">Inscribirse</a>}
         </div>
         </div>)
         }
@@ -408,8 +841,10 @@ type Supporter = {
   monochrome: boolean;
 };
 
+// The source of truth for 2026's sponsors and collaborators. Deliberately not
+// read from OSHWDemCollaboratorRepository (oshwdem_collaborator) this edition.
 const sponsors: Supporter[] = [
-  {name: "Arduino", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/arduino-cropped-medium.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9hcmR1aW5vLWNyb3BwZWQtbWVkaXVtLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3OTAwODc1NTYsImV4cCI6MTc5ODcyNzU1Nn0.XHtOe8F-5SctIa9FlfPJ03e6uvMyPH7In_1cUMLoNhk", link: "https://arduino.cc", tier: 0, monochrome: false},
+  {name: "Arduino", image: "/sponsor-logos/arduino.svg", link: "https://arduino.cc", tier: 0, monochrome: false},
   {name: "BricoGeek", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/bricogeek.jpg?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9icmljb2dlZWsuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTg1Nzg3MCwiZXhwIjoxNzk4NDk3ODcwfQ.CNfuwgUVQoGRTs1CyNpPaqRqNyHB_iC0oiUSg1GewsY", link: "https://tienda.bricogeek.com", tier: 1, monochrome: false},
   {name: "SOBotz", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/sobotz-white.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9zb2JvdHotd2hpdGUucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTQwNiwiZXhwIjoxNzk4NTcxNDA2fQ.TopR_p7qsRT5rddkv6COsArSt_M6WpnvYW3dezATyxM", link: "https://sobotz.com", tier: 1, monochrome: true},
   {name: "Lithuanian Bots", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/lithuanianbots-white.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9saXRodWFuaWFuYm90cy13aGl0ZS5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg5OTMxNDIxLCJleHAiOjE3OTg1NzE0MjF9.iY9wk2lyXaqV1K46oGLMM1a_C91ehdMfGudzHRsYsXY", link: "https://lithuanianbots.com", tier: 1, monochrome: true},
@@ -421,7 +856,7 @@ const institutionalCollaborators: Supporter[] = [
   {name: "AMTEGA", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/amtega.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9hbXRlZ2EucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMjA1NSwiZXhwIjoxNzk4NTcyMDU1fQ.5rYMY0MmFI6NKsCyAyFIQq2Eo1zURWopaZAiTFiR25M", link: "https://amtega.xunta.gal", tier: 0, monochrome: false},
   {name: "Museos Científicos", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/mc2.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9tYzIucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTg0NywiZXhwIjoxNzk4NTcxODQ3fQ.3wcPOI8UOpIZutsItPx3NhXKuHOXHBfirbDOGUgcYOk", link: "https://www.coruna.gal/mc2/es", tier: 1, monochrome: false},
   {name: "Escola de Imaxe e Son", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/eis.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9laXMucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTg5MCwiZXhwIjoxNzk4NTcxODkwfQ.sajMcr_buPBeab8NhZwdjmYrKy4n3AM2c_ypi0IVuGc", link: "https://eis.gal", tier: 1, monochrome: false},
-  {name: "Concello de A Coruña", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/concello-da-corunha.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9jb25jZWxsby1kYS1jb3J1bmhhLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODk5MzE5MTMsImV4cCI6MTc5ODU3MTkxM30.O1b_nIvEGfr0Gz50i5K3KmOvMiFxL0SjbzWjuxuq3tk", link: "https://www.coruna.gal/", tier: 1, monochrome: false},
+  {name: "Concello de A Coruña", image: "/sponsor-logos/concello-da-coruna.png", link: "https://www.coruna.gal/", tier: 1, monochrome: false},
 ];
 
 function byTier(a: Supporter, b: Supporter): number {
@@ -434,7 +869,7 @@ function SupporterWall({ supporters }: { supporters: Supporter[] }) {
       {[...supporters].sort(byTier).map(supporter => (
         <a
           key={supporter.name}
-          className={`supporter-card tier-${supporter.tier}${supporter.monochrome ? " monochrome" : ""}`}
+          className={`supporter-card tier-${supporter.tier} supporter-${toMedalSlug(supporter.name)}${supporter.monochrome ? " monochrome" : ""}`}
           href={supporter.link}
           target="_blank"
           rel="noopener noreferrer"
@@ -477,11 +912,12 @@ export function SponsorsAndCollaborators() {
 export function Call4MakersSign(){
   
   var call4MakersStatuses = ["SOON", "OPEN", "CLOSED", ]
-  var call4MakersStatus = call4MakersStatuses[1]
-  return <><div className="call-button">
+  var call4MakersStatus = call4MakersStatuses[2]
+  if (call4MakersStatus == "CLOSED") return null
+  return <><div className={`call-button c4m-${call4MakersStatus.toLowerCase()}-glow`}>
           {call4MakersStatus == "SOON"? <div className="c4m-soon">🛠️ CALL 4 MAKERS: ¡PRÓXIMAMENTE!</div>: <></>}
           {call4MakersStatus == "OPEN"? <><div className="pulsating-text-lcd c4m-open">🛠️ CALL 4 MAKERS: ¡ABIERTO!</div><a href="https://opnform.com/forms/call4makers-oshwdem-2026-gpapqw" className="call-inscription">¡Envíanos tu propuesta aquí!</a></>: <></>}
-          {call4MakersStatus == "CLOSED"? <div className="c4m-closed">🛠️ CALL 4 MAKERS: CERRADO</div>: <></>}
+          {call4MakersStatus == "CLOSED"? <div className="c4m-closed">🛠️ CALL 4 MAKERS: FINALIZADO</div>: <></>}
         </div>
         <div className="ribbon-ending"></div> 
         </>

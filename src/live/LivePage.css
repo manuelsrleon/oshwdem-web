@@ -12,10 +12,9 @@
     display:flex;
     flex-direction: column;
     justify-content: center;
-    flex: 1 1 20rem;
+    flex: 0 1 auto;
     min-width: 0;
     text-align: center;
-    container-type: inline-size;
 }
 #coming-soon {
     --title-pulse-min: 1;
@@ -71,7 +70,7 @@
     background: repeating-linear-gradient(45deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), repeating-linear-gradient(135deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px), #2E0561;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
+    justify-content: space-evenly;
     gap: clamp(0.5rem, 2vw, 1.5rem);
     padding: clamp(1rem, 2.5vw, 2em);
     box-sizing: border-box;
@@ -212,14 +211,54 @@ section {
     color: #ff6b6b;
 }
 
+.schedule-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    box-sizing: border-box;
+    min-height: 1574px;
+    padding-top: 6rem;
+    font-size: 1.2rem;
+}
+.spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 5px solid #ffffff22;
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+@media screen and (max-width: 1200px) {
+    .schedule-loading {
+        min-height: 1940px;
+    }
+}
+@media screen and (max-width: 640px) {
+    .schedule-loading {
+        min-height: 2226px;
+        padding-top: 4rem;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .spinner {
+        animation-duration: 3s;
+    }
+}
+
 .stands-container{
     display:flex;
     margin:2rem;
     flex-direction: column;
     flex-wrap: wrap;
     gap:1rem;
-    /* The list dissolves rather than stopping on a hard edge, so it reads as
-       "there's more still to come". */
+}
+/* The placeholder list dissolves rather than stopping on a hard edge, so it
+   reads as "there's more still to come". Real makers are never faded out. */
+.stands-container.teaser {
     -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 }
@@ -305,7 +344,7 @@ section {
     border-radius: 20px;
     padding: 15px;
     box-shadow: 0px 0px 0px 12px black,
-                0px 0px 20px 15px lime;
+                0px 0px 20px 15px var(--c4m-glow, lime);
     border: 10px solid rgba(222, 219, 202, 0.854);
 }
 .ribbon-ending{
@@ -337,6 +376,15 @@ section {
     font-size: 2rem;
 }
 
+.c4m-soon-glow {
+    --c4m-glow: cyan;
+}
+.c4m-open-glow {
+    --c4m-glow: lime;
+}
+.c4m-closed-glow {
+    --c4m-glow: red;
+}
 .c4m-soon {
     color: cyan
 }
@@ -368,6 +416,37 @@ section {
     align-items: center;
     gap:15px;
     justify-content: space-between;
+}
+/* A competition's medal (--competition-medal), large on the right side and
+   fading out to the left. The medal is a mask (so its colour is set here, not
+   in the SVG, which is blue laser-cut line art) and the fade is in the fill it
+   masks, which avoids depending on mask-composite. */
+.medal-pattern {
+    --medal-size: 240px;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+.medal-pattern::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent 35%, var(--color-background) 85%);
+    opacity: 0.18;
+    -webkit-mask-image: var(--competition-medal);
+    mask-image: var(--competition-medal);
+    -webkit-mask-size: var(--medal-size);
+    mask-size: var(--medal-size);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: right -30px center;
+    mask-position: right -30px center;
+}
+/* The cards are roomier than timetable cells, so their medal is a bit larger. */
+.competition.medal-pattern {
+    --medal-size: 300px;
 }
 .competition-link {
     background-color: var(--color-background);
@@ -425,7 +504,7 @@ section {
         gap: 10px;
     }
     .competition > h3{ 
-        font-size: 1.0rem;
+        font-size: 1.2rem;
     }
     .competition-link{
         font-size: 0.8rem;
@@ -446,6 +525,172 @@ section {
 .stand-exhibitors {
     padding:0;
     margin:0;
+}
+
+/* Call-for-makers cards: stands and workshops. */
+.stand.maker-workshop_everyone {
+    background-color: #0d47a1;
+}
+.stand.maker-talk {
+    background-color: #00aeff;
+    color: var(--color-background);
+}
+.maker-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+/* Logos come in all shapes, so the tile keeps one height and takes the
+   logo's own width, up to a limit. */
+.maker-logo {
+    order: 1;
+    margin-inline-start: auto;
+    height: 8rem;
+    width: auto;
+    max-width: 19rem;
+    object-fit: contain;
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 1.3rem 1.6rem;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+.maker-type {
+    display: inline-block;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    padding: 4px 14px;
+    border-radius: 15px;
+    font-size: 1rem;
+    text-transform: uppercase;
+}
+.maker-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.maker-level {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 15px;
+    background-color: white;
+    color: var(--color-background);
+    font-size: 1rem;
+    text-transform: uppercase;
+}
+.maker-level-advanced {
+    background-color: var(--accent-color);
+}
+.maker-name {
+    margin: 0.4rem 0 0.2rem;
+}
+.maker-details {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    list-style: none;
+    padding: 4px 14px;
+    margin: 1rem 0;
+    border-radius: 18px;
+    background-color: black;
+    color: white;
+}
+.maker-description,
+.maker-notes,
+.maker-details,
+.maker-tags > li,
+.stand-exhibitors,
+.activity-author,
+.activity-notes,
+.activity-precheck,
+.activity-timeframe {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-weight: 500;
+}
+.activity-timeframe,
+.activity-precheck,
+.maker-details,
+.stand-exhibitors {
+    font-weight: 600;
+}
+.has-background {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+.card-background {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(60%, 36rem);
+    z-index: -1;
+    pointer-events: none;
+    background-size: cover;
+    background-position: center;
+    object-fit: cover;
+    opacity: 0.75;
+    -webkit-mask-image: linear-gradient(to left, #000 25%, transparent 100%);
+    mask-image: linear-gradient(to left, #000 25%, transparent 100%);
+}
+video.card-background {
+    width: auto;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
+}
+@media screen and (max-width: 640px) {
+    .card-background {
+        inset: 0 0 auto 0;
+        width: auto;
+        height: min(60%, 16rem);
+        -webkit-mask-image: linear-gradient(to bottom, #000 25%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 25%, transparent 100%);
+    }
+    video.card-background {
+        width: 100%;
+        height: auto;
+        -webkit-mask-image: linear-gradient(to bottom, #000 25%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 25%, transparent 100%);
+    }
+}
+.maker-notes {
+    margin: 0 0 1rem;
+}
+.maker-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+}
+.maker-tags > li {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--color-background);
+    padding: 2px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+}
+/* Form answers keep their own paragraphs. */
+.maker-description {
+    white-space: pre-line;
+    margin: 0;
+}
+.maker-description strong {
+    font-weight: 700;
+}
+.maker-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 1rem;
+}
+.maker-link {
+    display: inline-block;
+    background-color: black;
+    color: white;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    text-transform: uppercase;
 }
 
 /* Hour-long holes in the Laboratorio column: nothing announced there yet, so
@@ -527,10 +772,23 @@ section {
 
 #sponsors-and-collaborators {
     --grid-color: #ffffff0f;
+    --edge-fade: clamp(2.5rem, 8vw, 5rem);
+    position: relative;
+    isolation: isolate;
+    background: transparent;
+}
+#sponsors-and-collaborators::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background:
         repeating-linear-gradient(45deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px),
         repeating-linear-gradient(135deg, var(--grid-color) 0px, var(--grid-color) 1px, transparent 1px, transparent 20px),
         linear-gradient(180deg, #1d1533 0%, #14111d 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--edge-fade), #000 calc(100% - var(--edge-fade)), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 var(--edge-fade), #000 calc(100% - var(--edge-fade)), transparent 100%);
 }
 
 #sponsors-and-collaborators > h2 {
@@ -625,6 +883,19 @@ section {
     outline-offset: 3px;
 }
 
+.supporter-card.supporter-sobotz .supporter-logo {
+    max-width: 70%;
+}
+
+@media screen and (max-width: 640px) {
+    .supporter-card.supporter-bricogeek .supporter-logo {
+        max-width: 90%;
+    }
+    .supporter-card.supporter-arduino .supporter-logo {
+        max-height: 9rem;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .supporter-card {
         transition: none;
@@ -632,5 +903,663 @@ section {
     .supporter-card:hover,
     .supporter-card:focus-visible {
         transform: none;
+    }
+}
+
+/* Notes share the Verificación look: a short practical line people shouldn't miss. */
+.activity-precheck,
+.activity-notes {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    padding: 2px 10px;
+    border-radius: 15px;
+}
+
+.activity-title {
+    font-size: 1.25rem;
+}
+
+/* Sign-up link on a timetable talk or workshop: the same black button as the
+   Puestos cards, sized for a cell. */
+.activity-link {
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 120ms ease, filter 120ms ease;
+}
+.activity-link:hover {
+    filter: brightness(1.08);
+    transform: translateY(-2px);
+}
+.activity.activity-link:hover {
+    color: #fff;
+}
+.activity.competicion.activity-link:hover {
+    color: var(--color-background);
+}
+.activity-link:active {
+    filter: brightness(0.95);
+    transform: translateY(0);
+}
+.activity-link:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
+}
+.stand[id],
+.competition[id] {
+    scroll-margin-top: 1.5rem;
+}
+.stand:target,
+.competition:target {
+    outline: 3px solid transparent;
+    outline-offset: 4px;
+    animation: target-highlight 4s ease-out;
+}
+@keyframes target-highlight {
+    0%, 65% { outline-color: var(--accent-color); }
+    100% { outline-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .stand:target,
+    .competition:target {
+        animation-duration: 0.01s;
+        animation-delay: 2.5s;
+        animation-fill-mode: backwards;
+    }
+}
+.activity-text > .activity-inscription {
+    display: inline-block;
+    cursor: pointer;
+    margin-block-start: 8px;
+    padding: 8px 18px;
+    background-color: black;
+    color: white;
+    border-radius: 10px;
+    font-family: 'BakBak One', 'Helvetica', sans-serif;
+    font-size: 1rem;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+.activity-text > .activity-inscription:hover {
+    background-color: white;
+    color: black;
+}
+.activity-inscription:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 3px;
+}
+
+/* Notes are things to act on before coming, so they pulse to get noticed. */
+.activity-notes {
+    animation: notes-ping 1.6s ease-out infinite;
+}
+/* A yellow ring that ripples out of the pill and fades, like a notification
+   ping: it catches the eye while the text itself stays still and readable. */
+@keyframes notes-ping {
+    from { box-shadow: 0 0 0 0 rgba(250, 190, 11, 0.9); }
+    to { box-shadow: 0 0 0 8px rgba(250, 190, 11, 0); }
+}
+
+/* Each piece of a timetable cell on its own line, sized to its content so the
+   pills and the time chip don't stretch across the cell. Logical sizes, so it
+   also holds in the vertical exposition strip on phones. */
+.activity-text > * {
+    display: block;
+    inline-size: fit-content;
+}
+.activity-text > * + * {
+    margin-block-start: 3px;
+}
+.activity.otro .activity-text > strong {
+    display: inline;
+}
+.activity.otro .activity-text > .activity-timeframe {
+    display: inline-block;
+    vertical-align: middle;
+}
+.activity.otro .activity-text > strong + .activity-timeframe {
+    margin-block-start: 0;
+    margin-inline-start: 0.5em;
+}
+/* The time is what people scan a timetable for, so it gets its own outlined
+   chip in the cell's text colour — readable on every cell colour, and distinct
+   from the filled Verificación/notes pills. */
+.activity-timeframe {
+    border: 1.5px solid currentColor;
+    border-radius: 8px;
+    /* Logical, so the chip keeps its proportions when the text runs vertically. */
+    padding-block: 0;
+    padding-inline: 6px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+    .activity-notes { animation: none; }
+    .activity-inscription,
+    .activity-link { transition: none; }
+    .activity-link:hover { transform: none; }
+}
+/* Phones: three rooms don't fit side by side at desktop proportions. The
+   exposition runs all day and only needs its name, so its column shrinks to a
+   strip with vertical text, leaving the width to talks, workshops and
+   competitions. Titles drop back to body size so cells stay readable. */
+@media screen and (max-width: 640px) {
+    .schedule {
+        /* minmax(0, …) lets a column shrink below its longest word instead of
+           pushing the grid off the side of the screen. */
+        grid-template-columns: 2.75rem minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .activity {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        padding: 9px;
+    }
+    .activity-title {
+        font-size: 1rem;
+    }
+    .activity-text > .activity-inscription {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+    /* A pill wraps as one piece rather than breaking mid-label. */
+    .activity-precheck,
+    .activity-notes {
+        display: inline-block;
+        font-size: 0.8rem;
+        padding: 2px 8px;
+    }
+    /* Read top to bottom, from the edge of the screen. */
+    .schedule-header:first-child,
+    .activity.exposicion .activity-text {
+        writing-mode: vertical-rl;
+    }
+    /* The header row is only as tall as the other two headers, so this one is
+       set smaller to fit "maker@domus (3ª planta)" in that height. */
+    .schedule-header:first-child {
+        font-size: 0.65rem !important;
+    }
+    .activity.exposicion {
+        justify-content: center;
+        align-items: center;
+    }
+    /* The strip only has room for one line of vertical text, so the title and
+       its time run on together instead of stacking side by side. */
+    .activity.exposicion .activity-text {
+        white-space: nowrap;
+    }
+    .activity.exposicion .activity-text > * {
+        display: inline-block;
+        margin-block-start: 0;
+    }
+    .activity.exposicion .activity-text > * + * {
+        margin-inline-start: 0.5em;
+    }
+    /* Narrow cells cut a centred medal through the middle; sitting it on the
+       bottom edge keeps it whole and clear of the title at the top. */
+    .medal-pattern::before {
+        /* Fades in from the top, towards the medal at the bottom. */
+        background: linear-gradient(to bottom, transparent 15%, var(--color-background) 90%);
+        -webkit-mask-position: right -30px bottom;
+        mask-position: right -30px bottom;
+    }
+}
+
+.back-to-top {
+    position: fixed;
+    right: clamp(1rem, 3vw, 2rem);
+    bottom: clamp(1rem, 3vw, 2rem);
+    z-index: 100;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border: 3px solid var(--color-background);
+    border-radius: 999px;
+    background-color: var(--accent-color);
+    color: var(--color-background);
+    font-family: 'BakBak One', sans-serif;
+    font-size: 1rem;
+    text-transform: uppercase;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 6px 18px #0009;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(1rem);
+    transition: opacity 200ms ease, transform 200ms ease, visibility 200ms;
+}
+.back-to-top-arrow {
+    width: 1.2em;
+    height: 1.2em;
+    flex-shrink: 0;
+}
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
+.back-to-top:hover {
+    transform: translateY(-3px);
+}
+.back-to-top:focus-visible {
+    outline: 3px solid var(--color-foreground);
+    outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .back-to-top {
+        transition: none;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    h1 {
+        font-size: 2rem;
+    }
+    h2 {
+        font-size: 1.6rem;
+        overflow-wrap: anywhere;
+    }
+    h3 {
+        font-size: 1.25rem;
+    }
+    h4 {
+        font-size: 1.1rem;
+    }
+    p {
+        font-size: 1rem;
+    }
+    #livestreaming-container > h3 {
+        font-size: 1rem;
+    }
+    .content-marquee {
+        font-size: 1rem;
+        padding: 0.75rem;
+    }
+    .c4m-soon, .c4m-open, .c4m-closed {
+        font-size: 1.1rem;
+    }
+    .call-button {
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align: center;
+    }
+    .ribbon-ending {
+        display: none;
+    }
+    .stand {
+        padding: 1rem;
+    }
+    .maker-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    .maker-header > div {
+        min-width: 0;
+        max-width: 100%;
+    }
+    .maker-details {
+        gap: 0.2rem 0.6rem;
+        padding: 4px 12px;
+        font-size: 0.85rem;
+    }
+    .maker-logo {
+        order: 0;
+        margin-inline-start: 0;
+        max-width: 100%;
+        height: 6rem;
+        padding: 0.9rem 1.1rem;
+    }
+    .maker-name {
+        overflow-wrap: anywhere;
+    }
+    .maker-tags > li {
+        font-size: 0.75rem;
+    }
+    .maker-link {
+        font-size: 0.85rem;
+    }
+    .back-to-top {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+#livestreaming-banner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    align-self: center;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 1.25rem 0.75rem 0.75rem;
+    background-color: white;
+    color: black;
+    border: 4px solid black;
+    border-radius: var(--border-radius);
+    box-shadow: 6px 6px 0 black;
+    text-align: left;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+}
+#livestreaming-banner:hover,
+#livestreaming-banner:focus-visible {
+    color: black;
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 black;
+}
+#livestreaming-banner:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 4px;
+}
+.livestreaming-logo {
+    height: clamp(4rem, 8vw, 6rem);
+    width: auto;
+    flex-shrink: 0;
+}
+.livestreaming-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+.livestreaming-cta {
+    display: inline-block;
+    width: fit-content;
+    background-color: black;
+    color: white;
+    padding: 2px 10px;
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    text-transform: uppercase;
+}
+.livestreaming-url {
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    text-decoration: underline;
+    overflow-wrap: anywhere;
+}
+.livestreaming-credit {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+@media (prefers-reduced-motion: reduce) {
+    #livestreaming-banner {
+        transition: none;
+    }
+    #livestreaming-banner:hover,
+    #livestreaming-banner:focus-visible {
+        transform: none;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .schedule-oshwdem-logo {
+        align-self: center;
+        width: min(100%, 26rem);
+        height: auto;
+    }
+    #livestreaming-banner {
+        gap: 1rem;
+        padding: 1rem;
+    }
+    .livestreaming-cta {
+        font-size: 1.4rem;
+    }
+    .livestreaming-url {
+        font-size: 1.15rem;
+    }
+}
+
+.live-header {
+    position: relative;
+}
+.live-header-brand,
+.live-header-event {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+.live-header-brand > .schedule-oshwdem-logo {
+    padding: 0;
+}
+.event-date {
+    margin: 0;
+    padding: 4px 14px;
+    background-color: var(--accent-color);
+    color: var(--color-background);
+    border-radius: var(--border-radius);
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    text-transform: uppercase;
+    text-align: center;
+}
+.countdown {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    width: 22rem;
+    max-width: 100%;
+}
+.countdown-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.4rem 0.25rem;
+    background-color: #0008;
+    border: 2px solid #fff4;
+    border-radius: 10px;
+}
+.countdown-value {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+.countdown-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+.countdown-message {
+    max-width: 22rem;
+    margin: 0;
+    text-align: center;
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+}
+.countdown-live {
+    color: lime;
+}
+.scroll-hint {
+    display: none;
+}
+
+@media screen and (max-width: 640px) {
+    .live-header {
+        flex-wrap: nowrap;
+        gap: 1.5rem;
+        padding: 1.5rem 1rem 0.75rem;
+    }
+    .live-header-brand,
+    .live-header-event {
+        gap: 1rem;
+    }
+    .live-header-brand > .schedule-oshwdem-logo {
+        width: 100%;
+        max-width: none;
+    }
+    .event-date {
+        align-self: stretch;
+        padding: 0.5rem 14px;
+        font-size: clamp(1rem, 5.5vw, 1.35rem);
+    }
+    .countdown {
+        width: 100%;
+    }
+    .countdown-unit {
+        padding: 0.9rem 0.25rem;
+    }
+    .countdown-value {
+        font-size: clamp(2.4rem, 12vw, 3.25rem);
+    }
+    .countdown-label {
+        font-size: 0.85rem;
+    }
+    #livestreaming-container {
+        flex: 0 0 auto;
+    }
+    #livestreaming-banner {
+        align-self: stretch;
+    }
+    .livestreaming-logo {
+        height: 6.5rem;
+    }
+    .scroll-hint {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        align-self: center;
+        padding: 0.25rem 1rem;
+        border: none;
+        background: transparent;
+        color: var(--accent-color);
+        font-family: 'BakBak One', sans-serif;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+    .scroll-hint > svg {
+        width: 1.75rem;
+        height: 1.75rem;
+        animation: scroll-hint-bounce 1.4s ease-in-out infinite;
+    }
+}
+@keyframes scroll-hint-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .scroll-hint > svg {
+        animation: none;
+    }
+}
+
+.maker-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin: 1.5rem 2rem 0;
+}
+.maker-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.maker-search {
+    position: relative;
+    flex: 0 1 22rem;
+    min-width: min(100%, 14rem);
+}
+.maker-search-icon {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    width: 1.1rem;
+    height: 1.1rem;
+    transform: translateY(-50%);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    opacity: 0.7;
+    pointer-events: none;
+}
+.maker-search-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.55rem 1rem 0.55rem 2.5rem;
+    border: 2px solid var(--color-foreground);
+    border-radius: 999px;
+    background-color: transparent;
+    color: var(--color-foreground);
+    font: inherit;
+    font-size: 1rem;
+}
+.maker-search-input::placeholder {
+    color: currentColor;
+    opacity: 0.55;
+}
+.maker-search-input:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
+}
+.maker-search-empty {
+    margin: 1.5rem 2rem;
+    opacity: 0.8;
+}
+.maker-filter {
+    --filter-color: var(--color-foreground);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--filter-color);
+    border-radius: 999px;
+    background-color: transparent;
+    color: var(--color-foreground);
+    font-family: 'BakBak One', sans-serif;
+    font-size: 1rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+.maker-filter-stand {
+    --filter-color: rgb(200, 60, 215);
+}
+.maker-filter-talk {
+    --filter-color: #00aeff;
+}
+.maker-filter-workshop_everyone {
+    --filter-color: #4d8ff0;
+}
+.maker-filter:hover {
+    background-color: #fff1;
+}
+.maker-filter[aria-pressed="true"] {
+    background-color: var(--filter-color);
+    color: var(--color-background);
+}
+.maker-filter:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
+}
+.maker-filter-count {
+    min-width: 1.5em;
+    padding: 0 0.4em;
+    border-radius: 999px;
+    background-color: #fff2;
+    font-size: 0.8em;
+    text-align: center;
+}
+.maker-filter[aria-pressed="true"] .maker-filter-count {
+    background-color: #0003;
+}
+@media (prefers-reduced-motion: reduce) {
+    .maker-filter {
+        transition: none;
+    }
+}
+@media screen and (max-width: 640px) {
+    .maker-toolbar {
+        margin: 1rem 0;
+    }
+    .maker-search {
+        flex-basis: 100%;
+    }
+    .maker-search-empty {
+        margin: 1rem 0;
+    }
+    .maker-filter {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
     }
 }
