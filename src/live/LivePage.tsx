@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import "./LivePage.css";
-import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum, MakerProposalTypeEnum } from "./database.types";
+import type { ActivityLocationEnum, ActivityStatusEnum, ActivityTypeEnum, MakerLevelEnum, MakerProposalTypeEnum } from "./database.types";
 import {
   toTimeLabel,
   type Activity as LiveActivity,
@@ -8,7 +8,8 @@ import {
 import { useActivities } from "./useActivities";
 import { toByline, type Maker } from "./OSHWDemMakerRepository";
 import { useMakers } from "./useMakers";
-import { useEventInfo } from "./useEventInfo";
+import { EVENT_END, useEventInfo } from "./useEventInfo";
+import { backgroundFor, type Background } from "./backgrounds";
 
 // PENDING is deliberately absent: not yet announced, so it stays off the grid.
 const VISIBLE_STATUSES: readonly ActivityStatusEnum[] = [
@@ -29,6 +30,8 @@ type Activity = {
   notes?: string;
   inscriptionLink?: string;
   status?: ActivityStatusEnum;
+  background?: Background;
+  href?: string;
 };
 
 type Stand = {
@@ -110,6 +113,7 @@ function toGridActivity(activity: LiveActivity): Activity {
     end: toTimeLabel(activity.endsAt),
     precheckStart: toTimeLabel(activity.precheckStart) || undefined,
     status: activity.status,
+    background: backgroundFor(String(activity.id)),
   };
 }
 
@@ -137,6 +141,8 @@ function makerToGridActivity(maker: Maker): Activity | null {
     notes: maker.notes ?? undefined,
     inscriptionLink: maker.inscriptionLink ?? undefined,
     status: "CONFIRMED",
+    background: backgroundFor(maker.background, maker.submissionId),
+    href: `#${makerAnchor(maker)}`,
   };
 }
 
@@ -366,7 +372,13 @@ const MYSTERY_STANDS = 5;
 const PROPOSAL_TYPE_LABELS: Record<MakerProposalTypeEnum, string> = {
   STAND: "Stand",
   TALK: "Charla",
-  WORKSHOP_EVERYONE: "Taller para todos los públicos",
+  WORKSHOP_EVERYONE: "Taller",
+};
+
+const LEVEL_LABELS: Record<MakerLevelEnum, string> = {
+  EVERYONE: "Para todos los públicos",
+  BEGINNER: "Para usuarios principiantes",
+  ADVANCED: "Usuarios avanzados",
 };
 
 const PROPOSAL_TYPE_FILTERS: { type: MakerProposalTypeEnum; label: string }[] = [
@@ -375,10 +387,36 @@ const PROPOSAL_TYPE_FILTERS: { type: MakerProposalTypeEnum; label: string }[] = 
   { type: "WORKSHOP_EVERYONE", label: "Talleres" },
 ];
 
+function normalizeForSearch(text: string): string {
+  return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+}
+
+function makerMatches(maker: Maker, query: string): boolean {
+  const haystack = [
+    maker.projectName,
+    maker.description,
+    maker.participants,
+    maker.organization,
+    ...maker.tags,
+  ].filter(Boolean).join(" ");
+  const normalized = normalizeForSearch(haystack);
+  return normalizeForSearch(query).split(/\s+/).filter(Boolean).every(term => normalized.includes(term));
+}
+
 export function Stands() {
   const { makers, loading, error } = useMakers();
   const [filter, setFilter] = useState<MakerProposalTypeEnum | null>(null);
-  const visibleMakers = filter ? makers.filter(maker => maker.proposalType === filter) : makers;
+  const [query, setQuery] = useState("");
+  const searchedMakers = useMemo(
+    () => query.trim() ? makers.filter(maker => makerMatches(maker, query)) : makers,
+    [makers, query],
+  );
+  const visibleMakers = filter ? searchedMakers.filter(maker => maker.proposalType === filter) : searchedMakers;
+
+  useEffect(() => {
+    if (loading || !window.location.hash) return;
+    document.getElementById(decodeURIComponent(window.location.hash.slice(1)))?.scrollIntoView();
+  }, [loading]);
 
   return (
     <section>
@@ -401,42 +439,120 @@ export function Stands() {
         </div>
       ) : (
         <>
-          <div className="maker-filters" role="group" aria-label="Filtrar por tipo">
-            <button
-              type="button"
-              className="maker-filter"
-              aria-pressed={filter === null}
-              onClick={() => setFilter(null)}
-            >
-              Todo <span className="maker-filter-count">{makers.length}</span>
-            </button>
-            {PROPOSAL_TYPE_FILTERS.map(({ type, label }) => {
-              const count = makers.filter(maker => maker.proposalType === type).length;
-              if (count === 0) return null;
-              return (
-                <button
-                  type="button"
-                  key={type}
-                  className={`maker-filter maker-filter-${type.toLowerCase()}`}
-                  aria-pressed={filter === type}
-                  onClick={() => setFilter(filter === type ? null : type)}
-                >
-                  {label} <span className="maker-filter-count">{count}</span>
-                </button>
-              );
-            })}
+          <div className="maker-toolbar">
+            <div className="maker-search">
+              <svg className="maker-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+              </svg>
+              <input
+                type="search"
+                className="maker-search-input"
+                placeholder="Buscar puestos, charlas, talleres…"
+                aria-label="Buscar puestos, charlas y talleres"
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+              />
+            </div>
+            <div className="maker-filters" role="group" aria-label="Filtrar por tipo">
+              <button
+                type="button"
+                className="maker-filter"
+                aria-pressed={filter === null}
+                onClick={() => setFilter(null)}
+              >
+                Todo <span className="maker-filter-count">{searchedMakers.length}</span>
+              </button>
+              {PROPOSAL_TYPE_FILTERS.map(({ type, label }) => {
+                const count = searchedMakers.filter(maker => maker.proposalType === type).length;
+                if (count === 0 && filter !== type) return null;
+                return (
+                  <button
+                    type="button"
+                    key={type}
+                    className={`maker-filter maker-filter-${type.toLowerCase()}`}
+                    aria-pressed={filter === type}
+                    onClick={() => setFilter(filter === type ? null : type)}
+                  >
+                    {label} <span className="maker-filter-count">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className="stands-container">
-            {visibleMakers.map(maker => <MakerCard key={maker.id} maker={maker} />)}
-          </div>
+          {visibleMakers.length === 0 ? (
+            <p className="maker-search-empty">No hay nada que coincida con «{query.trim()}».</p>
+          ) : (
+            <div className="stands-container">
+              {visibleMakers.map(maker => <MakerCard key={maker.id} maker={maker} />)}
+            </div>
+          )}
         </>
       )}
     </section>
   );
 }
 
+function makerAnchor(maker: Maker): string {
+  return `maker-${maker.submissionId ?? maker.id}`;
+}
+
+function competitionAnchor(slug: string): string {
+  return `competition-${slug}`;
+}
+
+function withBold(text: string) {
+  return text.split(/\*\*(.+?)\*\*/g).map((part, index) =>
+    index % 2 === 1 ? <strong key={index}>{part}</strong> : part,
+  );
+}
+
+function InscriptionButton({ url }: { url: string }) {
+  const open = (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+  return (
+    <span
+      className="activity-inscription"
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={event => {
+        if (event.key === "Enter" || event.key === " ") open(event);
+      }}
+    >
+      Inscribirse
+    </span>
+  );
+}
+
+function CardBackground({ background }: { background: Background }) {
+  if (background.video) {
+    return (
+      <video
+        className="card-background"
+        src={background.url}
+        autoPlay
+        muted
+        loop
+        playsInline
+        aria-hidden="true"
+        ref={video => {
+          if (!video) return;
+          video.muted = true;
+          video.play().catch(() => {});
+        }}
+      />
+    );
+  }
+  return <div className="card-background" style={{ backgroundImage: `url("${background.url}")` }} aria-hidden="true" />;
+}
+
 function MakerCard({ maker }: { maker: Maker }) {
   const byline = toByline(maker);
+  const background = backgroundFor(maker.background, maker.submissionId);
   const time = maker.startsAt && maker.endsAt
     ? `${toTimeLabel(maker.startsAt)} - ${toTimeLabel(maker.endsAt)}`
     : maker.startsAt
@@ -444,7 +560,8 @@ function MakerCard({ maker }: { maker: Maker }) {
       : null;
 
   return (
-    <article className={`stand maker-${maker.proposalType.toLowerCase()}`}>
+    <article id={makerAnchor(maker)} className={`stand maker-${maker.proposalType.toLowerCase()} ${background ? "has-background" : ""}`}>
+      {background ? <CardBackground background={background} /> : null}
       <div className="maker-header">
         {maker.logo ? (
           <img
@@ -457,28 +574,33 @@ function MakerCard({ maker }: { maker: Maker }) {
           />
         ) : null}
         <div>
-          <span className="maker-type">{PROPOSAL_TYPE_LABELS[maker.proposalType] ?? maker.proposalType}</span>
+          <div className="maker-pills">
+            <span className="maker-type">{PROPOSAL_TYPE_LABELS[maker.proposalType] ?? maker.proposalType}</span>
+            {maker.level ? <span className={`maker-level maker-level-${maker.level.toLowerCase()}`}>{LEVEL_LABELS[maker.level]}</span> : null}
+          </div>
           <h3 className="maker-name">{maker.projectName}</h3>
           {byline ? <p className="stand-exhibitors">{byline}</p> : null}
         </div>
       </div>
-      <ul className="maker-details">
-        {maker.location ? <li>📍 {maker.location}</li> : null}
-        {time ? <li className="stand-time">🕑 {time}</li> : null}
-        {maker.durationMinutes ? <li>⏱️ {maker.durationMinutes} min</li> : null}
-      </ul>
+      {maker.location || time || maker.durationMinutes ? (
+        <ul className="maker-details">
+          {maker.location ? <li>📍 {maker.location}</li> : null}
+          {time ? <li className="stand-time">🕑 {time}</li> : null}
+          {maker.durationMinutes ? <li>⏱️ {maker.durationMinutes} min</li> : null}
+        </ul>
+      ) : null}
       {maker.notes ? <p className="maker-notes"><span className="activity-notes">{maker.notes}</span></p> : null}
       {maker.tags.length > 0 ? (
         <ul className="maker-tags" aria-label="Temas">
           {maker.tags.map(tag => <li key={tag}>{tag}</li>)}
         </ul>
       ) : null}
-      {maker.description ? <p className="maker-description">{maker.description}</p> : null}
+      {maker.description ? <p className="maker-description">{withBold(maker.description)}</p> : null}
       {maker.link || maker.inscriptionLink ? (
         <div className="maker-links">
           {maker.inscriptionLink ? (
             <a className="maker-link" href={maker.inscriptionLink} target="_blank" rel="noopener noreferrer">
-              Inscripción
+              Inscribirse
             </a>
           ) : null}
           {maker.link ? (
@@ -510,6 +632,10 @@ export function TalksAndWorkshops() {
   </section>
 }
 
+function isClosing(act: Activity): boolean {
+  return act.type == "Otro" && act.location == "General" && act.start == toTimeLabel(EVENT_END);
+}
+
 const FAMILY_PHOTO: Activity = {
   id: "foto-familia",
   title: "Foto familia (Makers, competidores, voluntarios y organizadores)",
@@ -527,6 +653,7 @@ export function Schedule() {
   // Makers only add to the board, so if they fail to load the timetable still
   // shows everything else rather than an error.
   const { makers, loading: makersLoading } = useMakers();
+  const { inscriptionsClosed } = useEventInfo();
 
   // Rows without a start/end can't be placed on the grid.
   const activities = [
@@ -536,6 +663,7 @@ export function Schedule() {
     ...makers.flatMap(maker => makerToGridActivity(maker) ?? []),
     FAMILY_PHOTO,
   ];
+  const generalRowsTaken = new Set<number>();
 
   const originMinutes = activities.length
     ? Math.floor(
@@ -543,9 +671,19 @@ export function Schedule() {
       ) * MINUTES_PER_ROW
     : 0;
 
-  const mysteryActivities = findMysteryActivities(activities, originMinutes);
+  const mysteryActivities = inscriptionsClosed ? [] : findMysteryActivities(activities, originMinutes);
 
-  if (loading || makersLoading) return <div className="schedule-status">Cargando programa…</div>;
+  if (loading || makersLoading) {
+    return (
+      <section>
+        <h2>🕑 Programa del evento</h2>
+        <div className="schedule-loading" role="status">
+          <span className="spinner" aria-hidden="true" />
+          <span>Cargando programa…</span>
+        </div>
+      </section>
+    );
+  }
   if (error) {
     return (
       <div className="schedule-status schedule-error">
@@ -583,25 +721,34 @@ export function Schedule() {
 
           {/* Activities */}
           {activities.map(act => {
-            const startRow = timeToRow(act.start, originMinutes);
+            let startRow = timeToRow(act.start, originMinutes);
             // Never let an activity collapse to zero rows: one shorter than a row
             // (or with end == start) still needs to occupy a cell.
-            const endRow = Math.max(timeToRow(act.end || act.start, originMinutes), startRow + 1);
+            let endRow = Math.max(timeToRow(act.end || act.start, originMinutes), startRow + 1);
+            if (act.location === "General") {
+              while (generalRowsTaken.has(startRow)) {
+                startRow++;
+                endRow++;
+              }
+              generalRowsTaken.add(startRow);
+            }
 
             // General has no column of its own, so it spans all three.
             const col = columnOf(act.location) ?? "1 / span 3";
             const isCompetition = act.type == "Competicion";
+            const href = act.href ?? (isCompetition ? `#${competitionAnchor(toMedalSlug(act.title))}` : undefined);
+            const cellProps = {
+              className: `activity ${act.type.toLowerCase()} ${act.status ? `status-${act.status.toLowerCase()}` : ""} ${isCompetition ? "medal-pattern" : ""} ${act.background ? "has-background" : ""} ${href ? "activity-link" : ""}`,
+              style: {
+                ...(isCompetition ? medalStyle(toMedalSlug(act.title)) : {}),
+                gridColumn: col,
+                gridRow: `${startRow} / ${endRow}`
+              },
+            };
 
-            return (
-              <div
-                key={act.id}
-                className={`activity ${act.type.toLowerCase()} ${act.status ? `status-${act.status.toLowerCase()}` : ""} ${isCompetition ? "medal-pattern" : ""}`}
-                style={{
-                  ...(isCompetition ? medalStyle(toMedalSlug(act.title)) : {}),
-                  gridColumn: col,
-                  gridRow: `${startRow} / ${endRow}`
-                }}
-              >
+            const content = (
+              <>
+                {act.background ? <CardBackground background={act.background} /> : null}
                 {act.type == "Taller"?
                 <>
                   <div className="taller-marker">
@@ -624,9 +771,7 @@ export function Schedule() {
                     the second thing you read. */}
                 <div className="activity-text">
                     <strong className={TITLED_TYPES.includes(act.type) ? "activity-title" : undefined}>{act.title}</strong>
-                    {act.type != "Otro"?
-                    <span className="activity-timeframe">{act.end ? act.start+" - "+act.end : act.start}</span>
-                    :<></>}
+                    <span className="activity-timeframe">{act.end && !isClosing(act) ? act.start+" - "+act.end : act.start}</span>
                     {act.author?
                     <span className="activity-author">{act.author}</span>
                     :<></>}
@@ -637,11 +782,15 @@ export function Schedule() {
                     <span className="activity-notes">{act.notes}</span>
                     :<></>}
                     {act.inscriptionLink?
-                    <a className="activity-inscription" href={act.inscriptionLink} target="_blank" rel="noopener noreferrer">Inscripción</a>
+                    <InscriptionButton url={act.inscriptionLink} />
                     :<></>}
                 </div>
-              </div>
+              </>
             );
+
+            return href
+              ? <a key={act.id} href={href} {...cellProps}>{content}</a>
+              : <div key={act.id} {...cellProps}>{content}</div>;
           })}
         </div>
       </div>
@@ -661,7 +810,7 @@ export function Schedule() {
   }
   
   export function Competitions(){
-    const { hasStarted } = useEventInfo();
+    const { inscriptionsClosed } = useEventInfo();
     return <section>
     <h2>Competiciones</h2>
     <div className="competition-container">
@@ -669,13 +818,14 @@ export function Schedule() {
         competitions.map( (competition, index) => 
           <div
             key={competition.id}
+            id={competitionAnchor(competition.id)}
             className="competition medal-pattern"
             style={medalStyle(competition.id)}
           >
         <h3>{String(index+1).padStart(2,"0")} {competition.title}</h3>
         <div className="competition-links">
           <a href={competition.rule_link} className="competition-link">Reglas</a>
-          {hasStarted ? null : <a href={competition.inscription_link} className="competition-link">Inscripción</a>}
+          {inscriptionsClosed ? null : <a href={competition.inscription_link} className="competition-link">Inscribirse</a>}
         </div>
         </div>)
         }
@@ -694,7 +844,7 @@ type Supporter = {
 // The source of truth for 2026's sponsors and collaborators. Deliberately not
 // read from OSHWDemCollaboratorRepository (oshwdem_collaborator) this edition.
 const sponsors: Supporter[] = [
-  {name: "Arduino", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/arduino-cropped-medium.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9hcmR1aW5vLWNyb3BwZWQtbWVkaXVtLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3OTAwODc1NTYsImV4cCI6MTc5ODcyNzU1Nn0.XHtOe8F-5SctIa9FlfPJ03e6uvMyPH7In_1cUMLoNhk", link: "https://arduino.cc", tier: 0, monochrome: false},
+  {name: "Arduino", image: "/sponsor-logos/arduino.svg", link: "https://arduino.cc", tier: 0, monochrome: false},
   {name: "BricoGeek", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/bricogeek.jpg?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9icmljb2dlZWsuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTg1Nzg3MCwiZXhwIjoxNzk4NDk3ODcwfQ.CNfuwgUVQoGRTs1CyNpPaqRqNyHB_iC0oiUSg1GewsY", link: "https://tienda.bricogeek.com", tier: 1, monochrome: false},
   {name: "SOBotz", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/sobotz-white.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9zb2JvdHotd2hpdGUucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTQwNiwiZXhwIjoxNzk4NTcxNDA2fQ.TopR_p7qsRT5rddkv6COsArSt_M6WpnvYW3dezATyxM", link: "https://sobotz.com", tier: 1, monochrome: true},
   {name: "Lithuanian Bots", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/lithuanianbots-white.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9saXRodWFuaWFuYm90cy13aGl0ZS5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg5OTMxNDIxLCJleHAiOjE3OTg1NzE0MjF9.iY9wk2lyXaqV1K46oGLMM1a_C91ehdMfGudzHRsYsXY", link: "https://lithuanianbots.com", tier: 1, monochrome: true},
@@ -706,7 +856,7 @@ const institutionalCollaborators: Supporter[] = [
   {name: "AMTEGA", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/amtega.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9hbXRlZ2EucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMjA1NSwiZXhwIjoxNzk4NTcyMDU1fQ.5rYMY0MmFI6NKsCyAyFIQq2Eo1zURWopaZAiTFiR25M", link: "https://amtega.xunta.gal", tier: 0, monochrome: false},
   {name: "Museos Científicos", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/mc2.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9tYzIucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTg0NywiZXhwIjoxNzk4NTcxODQ3fQ.3wcPOI8UOpIZutsItPx3NhXKuHOXHBfirbDOGUgcYOk", link: "https://www.coruna.gal/mc2/es", tier: 1, monochrome: false},
   {name: "Escola de Imaxe e Son", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/eis.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9laXMucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4OTkzMTg5MCwiZXhwIjoxNzk4NTcxODkwfQ.sajMcr_buPBeab8NhZwdjmYrKy4n3AM2c_ypi0IVuGc", link: "https://eis.gal", tier: 1, monochrome: false},
-  {name: "Concello de A Coruña", image: "https://ozlggtgqioxukkqvgrbm.supabase.co/storage/v1/object/sign/image_bucket/oshwdem_sponsors/concello-da-corunha.png?token=eyJraWQiOiJkMzA4MmI2OC1hNmYwLTQ2NzktYTI2My1iN2E3ZGY5OTYyOGIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZV9idWNrZXQvb3Nod2RlbV9zcG9uc29ycy9jb25jZWxsby1kYS1jb3J1bmhhLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODk5MzE5MTMsImV4cCI6MTc5ODU3MTkxM30.O1b_nIvEGfr0Gz50i5K3KmOvMiFxL0SjbzWjuxuq3tk", link: "https://www.coruna.gal/", tier: 1, monochrome: false},
+  {name: "Concello de A Coruña", image: "/sponsor-logos/concello-da-coruna.png", link: "https://www.coruna.gal/", tier: 1, monochrome: false},
 ];
 
 function byTier(a: Supporter, b: Supporter): number {
@@ -719,7 +869,7 @@ function SupporterWall({ supporters }: { supporters: Supporter[] }) {
       {[...supporters].sort(byTier).map(supporter => (
         <a
           key={supporter.name}
-          className={`supporter-card tier-${supporter.tier}${supporter.monochrome ? " monochrome" : ""}`}
+          className={`supporter-card tier-${supporter.tier} supporter-${toMedalSlug(supporter.name)}${supporter.monochrome ? " monochrome" : ""}`}
           href={supporter.link}
           target="_blank"
           rel="noopener noreferrer"

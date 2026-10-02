@@ -1,5 +1,6 @@
 import type {
   ActivityLocationEnum,
+  MakerLevelEnum,
   MakerLocationEnum,
   MakerProposalTypeEnum,
   MakerRow,
@@ -27,6 +28,8 @@ export type Maker = {
   location: ActivityLocationEnum | null;
   tags: string[];
   notes: string | null;
+  level: MakerLevelEnum | null;
+  background: string | null;
   createdAt: Date;
 };
 
@@ -82,6 +85,8 @@ export function toMaker(row: MakerRow): Maker {
     location: row.location ? LOCATIONS[row.location] : null,
     tags: row.tags ?? [],
     notes: row.notes,
+    level: row.level ?? null,
+    background: row.background ?? null,
     createdAt: new Date(row.created_at),
   };
 }

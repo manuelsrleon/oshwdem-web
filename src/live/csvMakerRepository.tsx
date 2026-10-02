@@ -1,5 +1,6 @@
 import makersCsv from "./data/makers.csv?raw";
 import {
+  MakerLevelEnum,
   MakerLocationEnum,
   MakerProposalTypeEnum,
   type MakerRow,
@@ -44,6 +45,8 @@ export function parseMakersCsv(csv: string): MakerRow[] {
         location: toLocation(field("location")),
         tags: toTags(field("tags")),
         notes: field("notes"),
+        level: toLevel(field("level")),
+        background: field("background"),
       };
     });
 }
@@ -60,6 +63,10 @@ function toInteger(value: string | null): number | null {
   if (value === null) return null;
   const number = Number(value);
   return Number.isInteger(number) ? number : null;
+}
+
+function toLevel(value: string | null): MakerLevelEnum | null {
+  return Object.values(MakerLevelEnum).find((level) => level === value) ?? null;
 }
 
 function toLocation(value: string | null): MakerLocationEnum | null {
