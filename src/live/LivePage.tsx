@@ -263,8 +263,9 @@ export default function SchedulePage() {
     <ContentMarquee></ContentMarquee>
     <Schedule></Schedule> 
     <SponsorsAndCollaborators></SponsorsAndCollaborators>
-    <Competitions></Competitions>
     <Stands></Stands>
+    <Competitions></Competitions>
+    <Footer></Footer>
     <BackToTop></BackToTop>
     </div>
     
@@ -370,7 +371,7 @@ export function ComingSoon() {
 const MYSTERY_STANDS = 5;
 
 const PROPOSAL_TYPE_LABELS: Record<MakerProposalTypeEnum, string> = {
-  STAND: "Stand",
+  STAND: "Puesto",
   TALK: "Charla",
   WORKSHOP_EVERYONE: "Taller",
 };
@@ -382,9 +383,9 @@ const LEVEL_LABELS: Record<MakerLevelEnum, string> = {
 };
 
 const PROPOSAL_TYPE_FILTERS: { type: MakerProposalTypeEnum; label: string }[] = [
-  { type: "STAND", label: "Stands" },
-  { type: "TALK", label: "Charlas" },
   { type: "WORKSHOP_EVERYONE", label: "Talleres" },
+  { type: "TALK", label: "Charlas" },
+  { type: "STAND", label: "Puestos" },
 ];
 
 function normalizeForSearch(text: string): string {
@@ -403,14 +404,38 @@ function makerMatches(maker: Maker, query: string): boolean {
   return normalizeForSearch(query).split(/\s+/).filter(Boolean).every(term => normalized.includes(term));
 }
 
+const PROPOSAL_TYPE_ORDER: Record<MakerProposalTypeEnum, number> = {
+  WORKSHOP_EVERYONE: 0,
+  TALK: 1,
+  STAND: 2,
+};
+
+function byTypeAndTime(a: Maker, b: Maker): number {
+  return (PROPOSAL_TYPE_ORDER[a.proposalType] ?? 99) - (PROPOSAL_TYPE_ORDER[b.proposalType] ?? 99)
+    || (a.startsAt?.getTime() ?? Infinity) - (b.startsAt?.getTime() ?? Infinity);
+}
+
+const SHOW_STANDS_EVENT = "oshwdem:show-stands";
+
 export function Stands() {
   const { makers, loading, error } = useMakers();
   const [filter, setFilter] = useState<MakerProposalTypeEnum | null>(null);
   const [query, setQuery] = useState("");
+  const sortedMakers = useMemo(() => [...makers].sort(byTypeAndTime), [makers]);
   const searchedMakers = useMemo(
-    () => query.trim() ? makers.filter(maker => makerMatches(maker, query)) : makers,
-    [makers, query],
+    () => query.trim() ? sortedMakers.filter(maker => makerMatches(maker, query)) : sortedMakers,
+    [sortedMakers, query],
   );
+
+  useEffect(() => {
+    const showStands = () => {
+      setQuery("");
+      setFilter("STAND");
+    };
+    if (window.location.hash === "#puestos") showStands();
+    window.addEventListener(SHOW_STANDS_EVENT, showStands);
+    return () => window.removeEventListener(SHOW_STANDS_EVENT, showStands);
+  }, []);
   const visibleMakers = filter ? searchedMakers.filter(maker => maker.proposalType === filter) : searchedMakers;
 
   useEffect(() => {
@@ -419,7 +444,7 @@ export function Stands() {
   }, [loading]);
 
   return (
-    <section>
+    <section id="puestos">
       <div className="heading-row md-v">
         <h2>Puestos, talleres, conferencias y actividades ;) </h2> 
         <Call4MakersSign></Call4MakersSign>
@@ -432,7 +457,7 @@ export function Stands() {
         <div className="stands-container teaser">
           {Array.from({ length: MYSTERY_STANDS }, (_, i) => (
             <div className="stand mystery" key={i}>
-              <span className="mystery-label">Stand sin desvelar</span>
+              <span className="mystery-label">Puesto sin desvelar</span>
               <div className="mystery-pattern" aria-hidden="true" />
             </div>
           ))}
@@ -653,13 +678,32 @@ export function Schedule() {
   // Makers only add to the board, so if they fail to load the timetable still
   // shows everything else rather than an error.
   const { makers, loading: makersLoading } = useMakers();
+  const standPictures = useMemo(() => {
+    const pictures = makers
+      .filter(maker => maker.proposalType === "STAND")
+      .flatMap(maker => backgroundFor(maker.background, maker.submissionId) ?? [])
+      .filter(background => !background.video);
+    for (let i = pictures.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pictures[i], pictures[j]] = [pictures[j], pictures[i]];
+    }
+    return pictures.slice(0, 2);
+  }, [makers]);
   const { inscriptionsClosed } = useEventInfo();
 
   // Rows without a start/end can't be placed on the grid.
+  let expositionIndex = 0;
   const activities = [
     ...liveActivities
       .filter(act => act.startsAt && act.endsAt)
-      .map(toGridActivity),
+      .map(toGridActivity)
+      .map(act => act.type === "Exposicion"
+        ? {
+            ...act,
+            href: act.href ?? "#puestos",
+            background: act.background ?? (standPictures.length ? standPictures[expositionIndex++ % standPictures.length] : undefined),
+          }
+        : act),
     ...makers.flatMap(maker => makerToGridActivity(maker) ?? []),
     FAMILY_PHOTO,
   ];
@@ -784,12 +828,24 @@ export function Schedule() {
                     {act.inscriptionLink?
                     <InscriptionButton url={act.inscriptionLink} />
                     :<></>}
+                    {act.type == "Exposicion"?
+                    <span className="activity-cta">Ver lista de puestos</span>
+                    :<></>}
                 </div>
               </>
             );
 
             return href
-              ? <a key={act.id} href={href} {...cellProps}>{content}</a>
+              ? (
+                <a
+                  key={act.id}
+                  href={href}
+                  onClick={act.type == "Exposicion" ? () => window.dispatchEvent(new Event(SHOW_STANDS_EVENT)) : undefined}
+                  {...cellProps}
+                >
+                  {content}
+                </a>
+              )
               : <div key={act.id} {...cellProps}>{content}</div>;
           })}
         </div>
@@ -799,6 +855,25 @@ export function Schedule() {
     </>
   );
 }
+function Footer() {
+  return (
+    <footer className="live-footer">
+      <img src="/logo-oshwdem-2026.svg" className="live-footer-logo" alt="OSHWDem 2026" />
+      <ul className="live-footer-links">
+        <li>
+          <a href="https://wiki.bricolabs.cc/es/home" target="_blank" rel="noopener noreferrer">Wiki de BricoLabs</a>
+        </li>
+        <li>
+          <a href="https://github.com/manuelsrleon/oshwdem-web" target="_blank" rel="noopener noreferrer">Esta página es 100% open source</a>
+        </li>
+        <li>
+          <a href="https://github.com/manuelsrleon" target="_blank" rel="noopener noreferrer">Hecho por manuelsrleon</a>
+        </li>
+      </ul>
+    </footer>
+  );
+}
+
   export function ContentMarquee(){
     return <div className="content-marquee">
       Tecnologías Libres - Robótica - Impresión 3D - Radioafición - Meshtastic - Right to Repair - Repair Café

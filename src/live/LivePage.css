@@ -140,6 +140,36 @@ section {
     background-color: rgb(140, 0, 153);
     z-index: 10;
 }
+.activity.exposicion .card-background {
+    inset: 0;
+    width: auto;
+    height: auto;
+    opacity: 1;
+    -webkit-mask-image: none;
+    mask-image: none;
+    animation: background-pan 14s ease-in-out infinite alternate;
+}
+@keyframes background-pan {
+    from { background-position: 0% 50%; }
+    to { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .activity.exposicion .card-background {
+        animation: none;
+    }
+}
+.activity.exposicion.has-background .activity-text {
+    position: relative;
+}
+.activity.exposicion.has-background .activity-text::before {
+    content: "";
+    position: absolute;
+    inset: -1.25rem -1.5rem;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(140, 0, 153, 0.95) 0%, rgba(140, 0, 153, 0.9) 60%, rgba(140, 0, 153, 0) 90%);
+    filter: blur(10px);
+}
 
 .schedule-oshwdem-logo {
     padding: 1rem;
@@ -967,6 +997,7 @@ video.card-background {
         animation-fill-mode: backwards;
     }
 }
+.activity-text > .activity-cta,
 .activity-text > .activity-inscription {
     display: inline-block;
     cursor: pointer;
@@ -981,6 +1012,7 @@ video.card-background {
     text-decoration: none;
     transition: background-color 120ms ease, color 120ms ease;
 }
+.activity-link:hover .activity-text > .activity-cta,
 .activity-text > .activity-inscription:hover {
     background-color: white;
     color: black;
@@ -1057,6 +1089,9 @@ video.card-background {
     }
     .activity-title {
         font-size: 1rem;
+    }
+    .activity.exposicion .activity-text > .activity-cta {
+        display: none;
     }
     .activity-text > .activity-inscription {
         font-size: 0.85rem;
@@ -1206,6 +1241,7 @@ video.card-background {
     }
     .maker-logo {
         order: 0;
+        align-self: flex-end;
         margin-inline-start: 0;
         max-width: 100%;
         height: 6rem;
@@ -1561,5 +1597,50 @@ video.card-background {
     .maker-filter {
         font-size: 0.85rem;
         padding: 0.4rem 0.8rem;
+    }
+}
+
+.live-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem 2rem;
+    margin-top: 3rem;
+    padding: 2rem;
+    border-top: 1px solid #ffffff22;
+}
+.live-footer-logo {
+    height: clamp(3rem, 5vw, 4.5rem);
+    width: auto;
+    filter: invert();
+}
+.live-footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-weight: 500;
+}
+.live-footer-links a,
+.live-footer-links a:hover {
+    color: var(--color-foreground);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.live-footer-links a:hover {
+    color: var(--accent-color);
+}
+@media screen and (max-width: 640px) {
+    .live-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 2rem 16px;
+    }
+    .live-footer-links {
+        flex-direction: column;
     }
 }
